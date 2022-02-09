@@ -50,3 +50,10 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Vim files
+*.swp
+
+# Outut files
+config.c
+zwm
