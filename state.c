@@ -27,7 +27,6 @@ state_bind(state_t *state)
 	XUngrabButton(state->display, AnyButton, AnyModifier, state->root);
 	XUngrabKey(state->display, AnyKey, AnyModifier, state->root);
 
-	/*
 	XGrabButton(
 			state->display,
 			AnyButton,
@@ -39,7 +38,6 @@ state_bind(state_t *state)
 			GrabModeSync,
 			None,
 			None);
-			*/
 
 	TAILQ_FOREACH(binding, &state->config->keybindings, entry) {
 		XGrabKey(
@@ -95,6 +93,7 @@ state_free(state_t *state)
 state_t *
 state_init(char *display_name, char *config_path)
 {
+	int error_base;
 	state_t *state;
 	XSetWindowAttributes attributes;
 
@@ -118,6 +117,11 @@ state_init(char *display_name, char *config_path)
 
 	TAILQ_INIT(&state->screens);
 
+	if (!XRRQueryExtension(state->display, &state->xrandr_event_base, &error_base)) {
+		fprintf(stderr, "RandR extension missing\n");
+		return False;
+	}
+
 	if (!state_update_screens(state)) {
 		state_free(state);
 		return NULL;
@@ -129,8 +133,14 @@ state_init(char *display_name, char *config_path)
 	}
 
 	attributes.event_mask =
-		SubstructureRedirectMask | SubstructureNotifyMask | EnterWindowMask | PropertyChangeMask | ButtonPressMask;
+		SubstructureRedirectMask |
+		SubstructureNotifyMask |
+		EnterWindowMask |
+		PropertyChangeMask |
+		ButtonPressMask;
 	XChangeWindowAttributes(state->display, state->root, CWEventMask, &attributes);
+
+	XRRSelectInput(state->display, state->root, RRScreenChangeNotifyMask);
 
 	state_bind(state);
 
@@ -209,94 +219,24 @@ state_update_clients(state_t *state)
 		screen = screen_for_client(state, client);
 		screen_adopt(state, screen, client);
 
-		/*
-		client_set_active(state, client);
-		*/
+		client_activate(state, client);
 	}
 
 	return True;
 }
 
-Bool
-state_find_crtc(state_t *state, XRRScreenResources *resources, screen_binding_t *binding, RROutput *output)
-{
-	int i;
-	XRRCrtcInfo *crtc;
-
-	for (i = 0; i < resources->ncrtc; i++) {
-		crtc = XRRGetCrtcInfo(state->display, resources, resources->crtcs[i]);
-		if (!crtc) {
-			return False;
-		}
-
-		if ((crtc->width == binding->width) && (crtc->height == binding->height)) {
-			*output = resources->crtcs[i];
-			return True;
-		}
-
-	}
-
-	return False;
-}
-
-Bool
-state_find_mode(XRRScreenResources *resources, screen_binding_t *binding, RRMode *mode)
-{
-	int i;
-
-	for (i = 0; i < resources->nmode; i++) {
-		if ((resources->modes[i].width == binding->width) && (resources->modes[i].height == binding->height)) {
-			*mode = resources->modes[i].id;
-			return True;
-		}
-	}
-
-	return False;
-}
-
-screen_binding_t *
-state_find_screen_binding(state_t *state, char *screen_name)
-{
-	screen_binding_t *binding;
-
-	TAILQ_FOREACH(binding, &state->config->screenbindings, entry) {
-		if (!strcmp(binding->name, screen_name)) {
-			return binding;
-		}
-	}
-
-	return NULL;
-}
 
 Bool
 state_update_screens(state_t *state)
 {
 	client_t *client;
-	double dpi, height_mm, width_mm;
 	geometry_t geometry;
 	group_t *group;
-	int event_base, error_base, height_px = 0, i, j, major, minor, width_px = 0;
-	RRMode mode_id;
-	screen_binding_t *binding;
+	int i;
 	screen_t *screen;
 	XRRCrtcInfo *crtc;
 	XRROutputInfo *output;
 	XRRScreenResources *resources;
-
-	if (!XRRQueryExtension(state->display, &event_base, &error_base)) {
-		fprintf(stderr, "RandR extension missing\n");
-		return False;
-	}
-
-	if (!XRRQueryVersion(state->display, &major, &minor)) {
-		fprintf(stderr, "RandR extension missing\n");
-		return False;
-	}
-
-	if ((major < 1) || (minor < 2)) {
-		fprintf(stderr, "RandR extension too old: %d.%d\n", major, minor);
-		return False;
-	}
 
 	resources = XRRGetScreenResources(state->display, state->root);
 	if (!resources) {
@@ -308,128 +248,48 @@ state_update_screens(state_t *state)
 		screen->wired = False;
 	}
 
-	TAILQ_FOREACH(binding, &state->config->screenbindings, entry) {
-		if (binding->x > width_px) {
-			width_px = binding->x;
-		}
-
-		if (binding->y > height_px) {
-			height_px = binding->y;
-		}
-
-		if (binding->x + binding->width > width_px) {
-			width_px = binding->x + binding->width;
-		}
-
-		if (binding->y + binding->height > height_px) {
-			height_px = binding->y + binding->height;
-		}
-	}
-
-	dpi = (25.4 * DisplayHeight(state->display, state->primary_screen)) /
-		DisplayHeightMM(state->display, state->primary_screen);
-	width_mm = (25.4 * width_px) / dpi;
-	height_mm = (25.4 * height_px) / dpi;
-
 	for (i = 0; i < resources->noutput; i++) {
 		output = XRRGetOutputInfo(state->display, resources, resources->outputs[i]);
-
-		if (output->connection != RR_Connected) {
+		if ((!output) || (output->connection != RR_Connected)) {
 			continue;
 		}
 
-		screen = screen_init(state, output->name, output->crtc, geometry, output->mm_width, output->mm_height);
-		TAILQ_INSERT_TAIL(&state->screens, screen, entry);
-
-		XRRSetCrtcConfig(
-				state->display,
-				resources,
-				output->crtc,
-				CurrentTime,
-				0,
-				0,
-				None,
-				RR_Rotate_0,
-				NULL,
-				0);
-	}
-
-	FILE *f = fopen("/tmp/torwm.out", "w");
-	fprintf(f, "Setting screen size %dx%d (%-.2fx%-.2f)\n", width_px, height_px, width_mm, height_mm);
-	XRRSetScreenSize(state->display, state->root, width_px, height_px, width_mm, height_mm);
-
-	for (i = 0; i < resources->noutput; i++) {
-		output = XRRGetOutputInfo(state->display, resources, resources->outputs[i]);
-		if (!output) {
-			fprintf(stderr, "Could not get output 0x%lx information\n", resources->outputs[i]);
-			fprintf(f, "Could not get output 0x%lx information\n", resources->outputs[i]);
-			fclose(f);
-			XFree(resources);
-			return False;
-		}
-
-		if (output->connection != RR_Connected) {
+		crtc = XRRGetCrtcInfo(state->display, resources, output->crtc);
+		if (!crtc) {
 			continue;
 		}
+
+		geometry.x = crtc->x;
+		geometry.y = crtc->y;
+		geometry.width = crtc->width;
+		geometry.height = crtc->height;
 
 		screen = screen_find_by_name(state, output->name);
-		binding = state_find_screen_binding(state, output->name);
-		if (binding) {
-			if (!state_find_mode(resources, binding, &mode_id)) {
-				fprintf(stderr, "Could not find screen mode\n");
-				fprintf(f, "Could not find screen mode\n");
-				fclose(f);
-				XFree(resources);
-				return False;
-			}
-
-			crtc = XRRGetCrtcInfo(state->display, resources, screen->id);
-			fprintf(f, "setting crt %d\n", screen->id);
-			XRRSetCrtcConfig(
-					state->display,
-					resources,
-					screen->id,
-					CurrentTime,
-					binding->x,
-					binding->y,
-					mode_id,
-					RR_Rotate_0,
-					crtc->outputs,
-					crtc->noutput);
-
-			geometry.x = binding->x,
-			geometry.y = binding->y;
-			geometry.width = binding->width;
-			geometry.height = binding->height;
-		} else {
-			crtc = XRRGetCrtcInfo(state->display, resources, output->crtc);
-			geometry.x = crtc->x;
-			geometry.y = crtc->y;
-			geometry.width = crtc->width;
-			geometry.height = crtc->height;
+		if (!screen) {
+			screen = screen_init(state, output->name, output->crtc, geometry, output->mm_width, output->mm_height);
+			TAILQ_INSERT_TAIL(&state->screens, screen, entry);
 		}
 
 		screen_update_geometry(state, screen, geometry);
 		screen->wired = True;
 	}
 
+	XFree(resources);
+
 	while ((screen = screen_find_unwired(state)) != NULL) {
 		TAILQ_REMOVE(&state->screens, screen, entry);
 
 		for (i = 0; i < screen->desktop_count; i++) {
 			TAILQ_FOREACH(group, &screen->desktops[i]->groups, entry) {
-				TAILQ_FOREACH(client, &group->clients, entry) {
-					group_unassign(screen->desktops[i], client);
-					screen = screen_for_client(state, client);
-					screen_adopt(state, screen, client);
+				while ((client = TAILQ_FIRST(&group->clients)) != NULL) {
+					TAILQ_REMOVE(&group->clients, client, entry);
+					screen_adopt(state, screen_for_client(state, client), client);
 				}
 			}
 		}
 
 		screen_free(screen);
 	}
-
-	XFree(resources);
 
 	return True;
 }

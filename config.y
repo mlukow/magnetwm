@@ -88,7 +88,6 @@ void config_add_command(config_t *, char *, char *);
 int config_bind_key(config_t *, char *, char *);
 char *config_bind_mask(char *, unsigned int *);
 int config_bind_mouse(config_t *, char *, char *);
-int config_bind_screen(config_t *, char *, int, int, int, int);
 int findeol(void);
 int kw_cmp(const void *, const void *);
 int lgetc(int);
@@ -128,7 +127,6 @@ static config_t *config;
 %token MENUSELECTIONBACKGROUND
 %token MENUSELECTIONFOREGROUND
 %token NO
-%token BINDSCREEN
 %token YES
 
 %token <v.number> NUMBER
@@ -233,14 +231,6 @@ main	: BINDKEY STRING string {
 			 free($2);
 			 free($3);
 		}
-		| BINDSCREEN STRING NUMBER NUMBER NUMBER NUMBER {
-			if (!config_bind_screen(config, $2, $3, $4, $5, $6)) {
-				yyerror("invalid bind-screen: %s %d %d %d %d", $2, $3, $4, $5, $6);
-				free($2);
-				YYERROR;
-			}
-			free($2);
-		}
 		| BORDERWIDTH NUMBER {
 			 config->border_width = $2;
 		}
@@ -339,7 +329,6 @@ lookup(char *s)
 	static const keywords_t keywords[] = {
 		{ "bind-key", BINDKEY },
 		{ "bind-mouse", BINDMOUSE },
-		{ "bind-screen", BINDSCREEN },
 		{ "border-active", BORDERACTIVE },
 		{ "border-inactive", BORDERINACTIVE },
 		{ "border-urgent", BORDERURGENT },
@@ -645,32 +634,6 @@ int config_bind_mouse(config_t *config, char *bind, char *cmd)
 	return 0;
 }
 
-int config_bind_screen(config_t *config, char *name, int width, int height, int x, int y)
-{
-	screen_binding_t *binding;
-
-	if ((width < 0) || (height < 0)) {
-		return 0;
-	}
-
-	TAILQ_FOREACH(binding, &config->screenbindings, entry) {
-		if (!strcmp(binding->name, name)) {
-			return 0;
-		}
-	}
-
-	binding = calloc(1, sizeof(screen_binding_t));
-	binding->name = strdup(name);
-	binding->x = x;
-	binding->y = y;
-	binding->width = width;
-	binding->height = height;
-
-	TAILQ_INSERT_TAIL(&config->screenbindings, binding, entry);
-
-	return 1;
-}
-
 void
 config_free(config_t *config)
 {
@@ -711,16 +674,6 @@ config_init(char *path)
 	FILE *stream;
 	int errors = 0;
 
-	stream = fopen(path, "r");
-	if (stream == NULL) {
-		if (errno == ENOENT)
-			return (0);
-		fprintf(stderr, "Could not open %s", path);
-		return NULL;
-	}
-	file = pushfile(path, stream);
-	topfile = file;
-
 	config = malloc(sizeof(config_t));
 
 	config->colors[COLOR_BORDER_ACTIVE] = strdup("green");
@@ -740,9 +693,16 @@ config_init(char *path)
 	TAILQ_INIT(&config->commands);
 	TAILQ_INIT(&config->keybindings);
 	TAILQ_INIT(&config->mousebindings);
-	TAILQ_INIT(&config->screenbindings);
 
 	config_add_command(config, "terminal", "xterm");
+
+	stream = fopen(path, "r");
+	if (stream == NULL) {
+		return config;
+	}
+
+	file = pushfile(path, stream);
+	topfile = file;
 
 	yyparse();
 	errors = file->errors;

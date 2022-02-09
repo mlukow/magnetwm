@@ -15,6 +15,7 @@ typedef struct state_t {
 	Window root;
 	int fd;
 	int primary_screen;
+	int xrandr_event_base;
 
 	Atom *atoms;
 

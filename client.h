@@ -40,16 +40,17 @@ typedef struct client_t {
 	Bool take_focus;
 } client_t;
 
-client_t *client_active(struct state_t *);
+void client_activate(struct state_t *, client_t *);
+void client_deactivate(struct state_t *, client_t *);
 void client_draw_border(struct state_t *, client_t *);
 client_t *client_find(struct state_t *, Window);
+client_t *client_find_active(struct state_t *);
 void client_free(client_t *);
 client_t *client_init(struct state_t *, Window);
 void client_lower(struct state_t *, client_t *);
 void client_move_resize(struct state_t *, client_t *);
 void client_raise(struct state_t *, client_t *);
 void client_remove(struct state_t *, client_t *);
-void client_set_active(struct state_t *, client_t *);
 void client_update_size_hints(struct state_t *, client_t *);
 void client_update_wm_hints(struct state_t *, client_t *);
 void client_update_wm_name(struct state_t *, client_t *);

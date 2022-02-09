@@ -16,27 +16,42 @@
 void client_send_message(state_t *, client_t *, Atom, Time);
 void client_update_class(state_t *, client_t *);
 
-client_t *
-client_active(state_t *state)
+void
+client_activate(state_t *state, client_t *client)
 {
-	client_t *client;
-	group_t *group;
-	int i;
-	screen_t *screen;
+	client_t *current;
 
-	TAILQ_FOREACH(screen, &state->screens, entry) {
-		for (i = 0; i < screen->desktop_count; i++) {
-			TAILQ_FOREACH(group, &screen->desktops[i]->groups, entry) {
-				TAILQ_FOREACH(client, &group->clients, entry) {
-					if (client->active) {
-						return client;
-					}
-				}
-			}
-		}
+	current = client_find_active(state);
+	if (current) {
+		current->active = False;
+		client_draw_border(state, current);
 	}
 
-	return NULL;
+	if ((client->flags & InputHint) || (!client->take_focus)) {
+		XSetInputFocus(state->display, client->window, RevertToPointerRoot, CurrentTime);
+	}
+
+	if (client->take_focus) {
+		client_send_message(state, client, state->atoms[WM_TAKE_FOCUS], CurrentTime);
+	}
+
+	client->active = True;
+	client->flags &= ~XUrgencyHint;
+
+	client_draw_border(state, client);
+	// TODO: ewmh set net active window
+}
+
+void
+client_deactivate(state_t *state, client_t *client)
+{
+	if (!client->active) {
+		return;
+	}
+
+	client->active = False;
+
+	client_draw_border(state, client);
 }
 
 void
@@ -69,6 +84,29 @@ client_find(state_t *state, Window window)
 			TAILQ_FOREACH(group, &screen->desktops[i]->groups, entry) {
 				TAILQ_FOREACH(client, &group->clients, entry) {
 					if (client->window == window) {
+						return client;
+					}
+				}
+			}
+		}
+	}
+
+	return NULL;
+}
+
+client_t *
+client_find_active(state_t *state)
+{
+	client_t *client;
+	group_t *group;
+	int i;
+	screen_t *screen;
+
+	TAILQ_FOREACH(screen, &state->screens, entry) {
+		for (i = 0; i < screen->desktop_count; i++) {
+			TAILQ_FOREACH(group, &screen->desktops[i]->groups, entry) {
+				TAILQ_FOREACH(client, &group->clients, entry) {
+					if (client->active) {
 						return client;
 					}
 				}
@@ -212,7 +250,7 @@ client_remove(state_t *state, client_t *client)
 		return;
 	}
 
-	client_set_active(state, client);
+	client_activate(state, client);
 	*/
 }
 
@@ -230,32 +268,6 @@ client_send_message(state_t *state, client_t *client, Atom atom, Time time)
 	event.data.l[1] = time;
 
 	XSendEvent(state->display, client->window, False, NoEventMask, (XEvent *)&event);
-}
-
-void
-client_set_active(state_t *state, client_t *client)
-{
-	client_t *current;
-
-	current = client_active(state);
-	if (current) {
-		current->active = False;
-		client_draw_border(state, current);
-	}
-
-	if ((client->flags & InputHint) || (!client->take_focus)) {
-		XSetInputFocus(state->display, client->window, RevertToPointerRoot, CurrentTime);
-	}
-
-	if (client->take_focus) {
-		client_send_message(state, client, state->atoms[WM_TAKE_FOCUS], CurrentTime);
-	}
-
-	client->active = True;
-	client->flags &= ~XUrgencyHint;
-
-	client_draw_border(state, client);
-	// TODO: ewmh set net active window
 }
 
 void
@@ -345,7 +357,7 @@ client_update_wm_name(state_t *state, client_t *client)
 {
 	XTextProperty text;
 
-	if (!XGetTextProperty(state->display, client->window, &text, state->atoms[_NET_WM_NAME])) {
+	if (XGetTextProperty(state->display, client->window, &text, state->atoms[_NET_WM_NAME]) != Success) {
 		return;
 	}
 

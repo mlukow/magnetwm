@@ -12,7 +12,6 @@ void event_handle_button_press(state_t *, XButtonPressedEvent *);
 void event_handle_configure_request(state_t *, XConfigureRequestEvent *);
 void event_handle_create_notify(state_t *, XCreateWindowEvent *);
 void event_handle_destroy_notify(state_t *, XDestroyWindowEvent *);
-void event_handle_enter_notify(state_t *, XCrossingEvent *);
 void event_handle_key_press(state_t *, XKeyEvent *);
 void event_handle_leave_notify(state_t *, XCrossingEvent *);
 void event_handle_map_request(state_t *, XMapRequestEvent *);
@@ -30,14 +29,16 @@ event_handle_button_press(state_t *state, XButtonPressedEvent *event)
 
 	client = client_find(state, event->subwindow);
 	if (client) {
-		printf("found client\n");
 		client_raise(state, client);
 
 		if (!client->active) {
-			client_set_active(state, client);
+			client_activate(state, client);
 		}
 	} else {
-		printf("no client\n");
+		client = client_find_active(state);
+		if (client) {
+			client_deactivate(state, client);
+		}
 	}
 
 	XAllowEvents(state->display, ReplayPointer, event->time);
@@ -148,7 +149,7 @@ event_handle_map_request(state_t *state, XMapRequestEvent *event)
 
 	XMapWindow(state->display, client->window);
 
-	client_set_active(state, client);
+	client_activate(state, client);
 }
 
 void

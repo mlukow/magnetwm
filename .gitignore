@@ -56,4 +56,4 @@ dkms.conf
 
 # Outut files
 config.c
-zwm
+torwm

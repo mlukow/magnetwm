@@ -7,7 +7,6 @@ struct state_t;
 
 TAILQ_HEAD(command_q, command_t);
 TAILQ_HEAD(binding_q, binding_t);
-TAILQ_HEAD(screen_binding_q, screen_binding_t);
 
 typedef enum {
 	BINDING_CONTEXT_CLIENT,
@@ -54,23 +53,12 @@ typedef struct config_t {
 	struct command_q commands;
 	struct binding_q keybindings;
 	struct binding_q mousebindings;
-	struct screen_binding_q screenbindings;
 
 	char *colors[COLOR_NITEMS];
 	char *fonts[FONT_NITEMS];
 
 	int border_width;
 } config_t;
-
-typedef struct screen_binding_t {
-	TAILQ_ENTRY(screen_binding_t) entry;
-
-	char *name;
-	int x;
-	int y;
-	unsigned int width;
-	unsigned int height;
-} screen_binding_t;
 
 void config_free(config_t *);
 config_t *config_init(char *);
