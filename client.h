@@ -9,6 +9,29 @@
 struct group_t;
 struct state_t;
 
+typedef enum client_flags_t {
+	CLIENT_HIDDEN = 0x0001,
+	CLIENT_IGNORE = 0x0002,
+	CLIENT_VMAXIMIZED = 0x0004,
+	CLIENT_HMAXIMIZED = 0x0008,
+	CLIENT_FREEZE = 0x0010,
+	CLIENT_GROUP = 0x0020,
+	CLIENT_UNGROUP = 0x0040,
+	CLIENT_INPUT = 0x0080,
+	CLIENT_WM_DELETE_WINDOW = 0x0100,
+	CLIENT_WM_TAKE_FOCUS = 0x0200,
+	CLIENT_URGENCY = 0x0400,
+	CLIENT_FULLSCREEN = 0x0800,
+	CLIENT_STICKY = 0x1000,
+	CLIENT_ACTIVE = 0x2000,
+	CLIENT_SKIP_PAGER = 0x4000,
+	CLIENT_SKIP_TASKBAR = 0x8000,
+	CLIENT_SKIP_CYCLE = (CLIENT_HIDDEN | CLIENT_IGNORE | CLIENT_SKIP_TASKBAR | CLIENT_SKIP_PAGER),
+	CLIENT_HIGHLIGHT = (CLIENT_GROUP | CLIENT_UNGROUP),
+	CLIENT_MAXFLAGS = (CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED),
+	CLIENT_MAXIMIZED = (CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED)
+} client_flags_t;
+
 typedef struct client_t {
 	TAILQ_ENTRY(client_t) entry;
 
@@ -33,11 +56,9 @@ typedef struct client_t {
 	} hints;
 
 	long flags;
+	long initial_state;
 	unsigned int border_width;
 	geometry_t geometry;
-	Bool active;
-	Bool delete_window;
-	Bool take_focus;
 } client_t;
 
 void client_activate(struct state_t *, client_t *);
@@ -46,11 +67,22 @@ void client_draw_border(struct state_t *, client_t *);
 client_t *client_find(struct state_t *, Window);
 client_t *client_find_active(struct state_t *);
 void client_free(client_t *);
+void client_hide(struct state_t *, client_t *);
 client_t *client_init(struct state_t *, Window);
 void client_lower(struct state_t *, client_t *);
-void client_move_resize(struct state_t *, client_t *);
+void client_move_resize(struct state_t *, client_t *, Bool);
 void client_raise(struct state_t *, client_t *);
 void client_remove(struct state_t *, client_t *);
+void client_show(struct state_t *, client_t *);
+void client_toggle_freeze(struct state_t *, client_t *);
+void client_toggle_fullscreen(struct state_t *, client_t *);
+void client_toggle_hidden(struct state_t *, client_t *);
+void client_toggle_hmaximize(struct state_t *, client_t *);
+void client_toggle_skip_pager(struct state_t *, client_t *);
+void client_toggle_skip_taskbar(struct state_t *, client_t *);
+void client_toggle_sticky(struct state_t *, client_t *);
+void client_toggle_urgent(struct state_t *, client_t *);
+void client_toggle_vmaximize(struct state_t *, client_t *);
 void client_update_size_hints(struct state_t *, client_t *);
 void client_update_wm_hints(struct state_t *, client_t *);
 void client_update_wm_name(struct state_t *, client_t *);

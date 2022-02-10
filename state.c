@@ -67,6 +67,7 @@ state_error_handler(Display *display, XErrorEvent *event)
 void
 state_free(state_t *state)
 {
+	int i;
 	screen_t *screen;
 
 	if (!state) {
@@ -81,6 +82,17 @@ state_free(state_t *state)
 		screen_free(screen);
 	}
 
+	for (i = 0; i < COLOR_NITEMS; i++) {
+		XftColorFree(state->display, state->visual, state->colormap, &state->colors[i]);
+	}
+
+	for (i = 0; i < CURSOR_NITEMS; i++) {
+		XFreeCursor(state->display, state->cursors[i]);
+	}
+
+	free(state->colors);
+	free(state->fonts);
+
 	XSync(state->display, False);
 	XSetInputFocus(state->display, PointerRoot, RevertToPointerRoot, CurrentTime);
 	XCloseDisplay(state->display);
@@ -93,7 +105,7 @@ state_free(state_t *state)
 state_t *
 state_init(char *display_name, char *config_path)
 {
-	int error_base;
+	int error_base, i, result;
 	state_t *state;
 	XSetWindowAttributes attributes;
 
@@ -111,9 +123,45 @@ state_init(char *display_name, char *config_path)
 	}
 
 	state->primary_screen = DefaultScreen(state->display);
+	state->colormap = DefaultColormap(state->display, state->primary_screen);
+	state->visual = DefaultVisual(state->display, state->primary_screen);
 	state->root = RootWindow(state->display, state->primary_screen);
 	state->fd = ConnectionNumber(state->display);
 	state->config = config_init(config_path);
+
+	state->cursors[CURSOR_NORMAL] = XCreateFontCursor(state->display, XC_left_ptr);
+	state->cursors[CURSOR_MOVE] = XCreateFontCursor(state->display, XC_fleur);
+	state->cursors[CURSOR_RESIZE_BOTTOM_LEFT] = XCreateFontCursor(state->display, XC_bottom_left_corner);
+	state->cursors[CURSOR_RESIZE_BOTTOM_RIGHT] = XCreateFontCursor(state->display, XC_bottom_right_corner);
+	state->cursors[CURSOR_RESIZE_TOP_LEFT] = XCreateFontCursor(state->display, XC_top_left_corner);
+	state->cursors[CURSOR_RESIZE_TOP_RIGHT] = XCreateFontCursor(state->display, XC_top_right_corner);
+
+	state->colors = calloc(COLOR_NITEMS, sizeof(XftColor));
+	for (i = 0; i < COLOR_NITEMS; i++) {
+		result = XftColorAllocName(
+				state->display,
+				state->visual,
+				state->colormap,
+				state->config->colors[i],
+				&state->colors[i]);
+		if (!result) {
+			fprintf(stderr, "Invalid color: %s\n", state->config->colors[i]);
+		}
+	}
+
+	state->fonts = calloc(FONT_NITEMS, sizeof(XftFont *));
+	memset(state->fonts, 0, sizeof(XftFont *));
+	for (i = 0; i < FONT_NITEMS; i++) {
+		state->fonts[i] = XftFontOpenXlfd(state->display, state->primary_screen, state->config->fonts[i]);
+
+		if (!state->fonts[i]) {
+			state->fonts[i] = XftFontOpenName(state->display, state->primary_screen, state->config->fonts[i]);
+		}
+
+		if (!state->fonts[i]) {
+			fprintf(stderr, "Invalid font: %s\n", state->config->fonts[i]);
+		}
+	}
 
 	TAILQ_INIT(&state->screens);
 
@@ -132,13 +180,14 @@ state_init(char *display_name, char *config_path)
 		return NULL;
 	}
 
+	attributes.cursor = state->cursors[CURSOR_NORMAL];
 	attributes.event_mask =
 		SubstructureRedirectMask |
 		SubstructureNotifyMask |
 		EnterWindowMask |
 		PropertyChangeMask |
 		ButtonPressMask;
-	XChangeWindowAttributes(state->display, state->root, CWEventMask, &attributes);
+	XChangeWindowAttributes(state->display, state->root, CWCursor | CWEventMask, &attributes);
 
 	XRRSelectInput(state->display, state->root, RRScreenChangeNotifyMask);
 
@@ -190,7 +239,16 @@ state_init_atoms(state_t *state)
 		"_NET_WM_USER_TIME_WINDOW",
 		"_NET_FRAME_EXTENTS",
 		"_NET_WM_OPAQUE_REGION",
-		"_NET_WM_BYPASS_COMPOSITOR"
+		"_NET_WM_BYPASS_COMPOSITOR",
+		"_NET_WM_STATE_STICKY",
+		"_NET_WM_STATE_MAXIMIZED_VERT",
+		"_NET_WM_STATE_MAXIMIZED_HORZ",
+		"_NET_WM_STATE_HIDDEN",
+		"_NET_WM_STATE_FULLSCREEN",
+		"_NET_WM_STATE_DEMANDS_ATTENTION",
+		"_NET_WM_STATE_SKIP_PAGER",
+		"_NET_WM_STATE_SKIP_TASKBAR",
+		"_CWM_WM_STATE_FREEZE",
 	};
 
 	state->atoms = calloc(32, sizeof(Atom));

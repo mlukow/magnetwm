@@ -34,6 +34,28 @@ x_get_pointer(Display *display, Window root, int *x, int *y)
 	return XQueryPointer(display, root, &window, &window, x, y, &window_x, &window_y, &mask);
 }
 
+int
+x_get_property(Display *display, Window window, Atom atom, Atom type, long length, unsigned char **output)
+{
+	Atom real_type;
+	int format;
+	unsigned long count, extra;
+
+	if (XGetWindowProperty(display, window, atom, 0L, length, False, type, &real_type, &format, &count, &extra, output) != Success) {
+		return -1;
+	}
+
+	if (!*output) {
+		return -1;
+	}
+
+	if (count == 0) {
+		XFree(*output);
+	}
+
+	return count;
+}
+
 /*
 void
 x_ewmh_set_client_list(state_t *state)

@@ -59,14 +59,16 @@ main(int argc, char **argv)
 	xasprintf(&file, "%s/%s", home, ".torwmrc");
 
     state = state_init(NULL, file);
-    if (!state)
+    if (!state) {
         return EXIT_FAILURE;
+	}
 
     if ((signal(SIGCHLD, signal_handler) == SIG_ERR) ||
         (signal(SIGHUP, signal_handler) == SIG_ERR) ||
         (signal(SIGINT, signal_handler) == SIG_ERR) ||
-        (signal(SIGTERM, signal_handler) == SIG_ERR))
+        (signal(SIGTERM, signal_handler) == SIG_ERR)) {
         fprintf(stderr, "Could not register signal handlers\n");
+	}
 
     memset(&pfd, 0, sizeof(pfd));
     pfd[0].fd = state->fd;

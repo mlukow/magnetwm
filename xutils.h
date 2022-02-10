@@ -49,6 +49,18 @@ typedef enum ewmh_t {
 	_NET_FRAME_EXTENTS,
 	_NET_WM_OPAQUE_REGION,
 	_NET_WM_BYPASS_COMPOSITOR,
+
+	// states
+	_NET_WM_STATE_STICKY,
+	_NET_WM_STATE_MAXIMIZED_VERT,
+	_NET_WM_STATE_MAXIMIZED_HORZ,
+	_NET_WM_STATE_HIDDEN,
+	_NET_WM_STATE_FULLSCREEN,
+	_NET_WM_STATE_DEMANDS_ATTENTION,
+	_NET_WM_STATE_SKIP_PAGER,
+	_NET_WM_STATE_SKIP_TASKBAR,
+	_CWM_WM_STATE_FREEZE,
+
 	EWMH_NITEMS
 } ewmh_t;
 
@@ -62,6 +74,7 @@ typedef struct geometry_t {
 Bool x_contains_point(geometry_t, int, int);
 int x_distance(geometry_t, int, int);
 Bool x_get_pointer(Display *, Window, int *, int *);
+int x_get_property(Display *, Window, Atom, Atom, long, unsigned char **);
 
 /*
 void x_ewmh_set_client_list(struct state_t *);

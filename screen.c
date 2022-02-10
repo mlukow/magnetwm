@@ -35,7 +35,7 @@ screen_adopt(state_t *state, screen_t *screen, client_t *client)
 	}
 
 	if (dirty) {
-		client_move_resize(state, client);
+		client_move_resize(state, client, False);
 	}
 }
 

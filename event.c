@@ -21,6 +21,7 @@ void
 event_handle_button_press(state_t *state, XButtonPressedEvent *event)
 {
 	client_t *client;
+	binding_t *binding;
 	screen_t *screen;
 
 	screen = screen_for_point(state, event->x_root, event->y_root);
@@ -31,7 +32,7 @@ event_handle_button_press(state_t *state, XButtonPressedEvent *event)
 	if (client) {
 		client_raise(state, client);
 
-		if (!client->active) {
+		if (!(client->flags & CLIENT_ACTIVE)) {
 			client_activate(state, client);
 		}
 	} else {
@@ -41,7 +42,19 @@ event_handle_button_press(state_t *state, XButtonPressedEvent *event)
 		}
 	}
 
-	XAllowEvents(state->display, ReplayPointer, event->time);
+	TAILQ_FOREACH(binding, &state->config->mousebindings, entry) {
+		if ((event->state == binding->modifier) && (binding->button == event->button)) {
+			if ((binding->context == BINDING_CONTEXT_CLIENT) && client) {
+				binding->function(state, client, binding->flag);
+			} else if ((binding->context == BINDING_CONTEXT_SCREEN) && screen) {
+				binding->function(state, screen, binding->flag);
+			} else if (binding->context == BINDING_CONTEXT_GLOBAL) {
+				binding->function(state, screen, binding->flag);
+			}
+		}
+	}
+
+	XAllowEvents(state->display, ReplayPointer, event->time); // SyncPointer
 	XSync(state->display, 0);
 }
 
@@ -122,14 +135,28 @@ void
 event_handle_key_press(state_t *state, XKeyEvent *event)
 {
 	binding_t *binding;
+	client_t *client;
 	KeySym keysym;
+	screen_t *screen;
+
+	client = client_find_active(state);
+	if (client) {
+		screen = screen_for_client(state, client);
+	} else {
+		screen = NULL;
+	}
 
 	keysym = XkbKeycodeToKeysym(state->display, event->keycode, 0, 0);
 
 	TAILQ_FOREACH(binding, &state->config->keybindings, entry) {
 		if ((event->state == binding->modifier) && (binding->button == keysym)) {
-			binding->function(state, NULL, binding->flag);
-			return;
+			if ((binding->context == BINDING_CONTEXT_CLIENT) && client) {
+				binding->function(state, client, binding->flag);
+			} else if ((binding->context == BINDING_CONTEXT_SCREEN) && screen) {
+				binding->function(state, screen, binding->flag);
+			} else if (binding->context == BINDING_CONTEXT_GLOBAL) {
+				binding->function(state, screen, binding->flag);
+			}
 		}
 	}
 

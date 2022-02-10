@@ -50,6 +50,7 @@ struct keywords_t {
 static const struct {
 	char *tag;
 	void (*function)(state_t *, void *, long);
+	binding_context_t context;
 	long flag;
 } name_to_func[] = {
 /*
@@ -57,21 +58,21 @@ static const struct {
 	{ "group-rcycle", function_group_cycle, 1 },
 	{ "firefox", function_firefox, 0 },
 	*/
-	{ "terminal", function_terminal, 0 },
-	{ "window-center", function_window_center, 0 },
+	{ "terminal", function_terminal, BINDING_CONTEXT_GLOBAL, 0 },
+	{ "window-center", function_window_center, BINDING_CONTEXT_CLIENT, 0 },
 	/*
 	{ "window-cycle", function_window_cycle, 0 },
-	{ "window-tile-up", function_window_tile, 1 },
-	{ "window-tile-up-right", function_window_tile, 9 },
-	{ "window-tile-right", function_window_tile, 8 },
-	{ "window-tile-down", function_window_tile, 2 },
-	{ "window-tile-down-right", function_window_tile, 10 },
-	{ "window-tile-down-left", function_window_tile, 6 },
-	{ "window-tile-left", function_window_tile, 4 },
-	{ "window-tile-up-left", function_window_tile, 5 },
-	{ "window-move", function_window_move, 0 },
-	{ "window-resize", function_window_resize, 0 },
 	*/
+	{ "window-tile-up", function_window_tile, BINDING_CONTEXT_CLIENT, 1 },
+	{ "window-tile-up-right", function_window_tile, BINDING_CONTEXT_CLIENT, 9 },
+	{ "window-tile-right", function_window_tile, BINDING_CONTEXT_CLIENT, 8 },
+	{ "window-tile-down", function_window_tile, BINDING_CONTEXT_CLIENT, 2 },
+	{ "window-tile-down-right", function_window_tile, BINDING_CONTEXT_CLIENT, 10 },
+	{ "window-tile-down-left", function_window_tile, BINDING_CONTEXT_CLIENT, 6 },
+	{ "window-tile-left", function_window_tile, BINDING_CONTEXT_CLIENT, 4 },
+	{ "window-tile-up-left", function_window_tile, BINDING_CONTEXT_CLIENT, 5 },
+	{ "window-move", function_window_move, BINDING_CONTEXT_CLIENT, 0 },
+	{ "window-resize", function_window_resize, BINDING_CONTEXT_CLIENT, 0 },
 };
 
 TAILQ_HEAD(files, file_t) files = TAILQ_HEAD_INITIALIZER(files);
@@ -574,6 +575,7 @@ config_bind_key(config_t *config, char *bind, char *cmd)
 	for (i = 0; i < sizeof(name_to_func) / sizeof(name_to_func[0]); i++) {
 		if (!strcmp(name_to_func[i].tag, cmd)) {
 			binding->function = name_to_func[i].function;
+			binding->context = name_to_func[i].context;
 			binding->flag = name_to_func[i].flag;
 			TAILQ_INSERT_TAIL(&config->keybindings, binding, entry);
 			return 1;
@@ -623,6 +625,7 @@ int config_bind_mouse(config_t *config, char *bind, char *cmd)
 	for (i = 0; i < sizeof(name_to_func) / sizeof(name_to_func[0]); i++) {
 		if (!strcmp(name_to_func[i].tag, cmd)) {
 			binding->function = name_to_func[i].function;
+			binding->context = name_to_func[i].context;
 			binding->flag = name_to_func[i].flag;
 			TAILQ_INSERT_TAIL(&config->mousebindings, binding, entry);
 			return 1;
