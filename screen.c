@@ -9,11 +9,30 @@
 #include "state.h"
 
 void
+screen_activate(state_t *state, screen_t *screen)
+{
+	screen_t *current;
+
+	current = screen_find_active(state);
+	if (current == screen) {
+		return;
+	}
+
+	if (current) {
+		current->active = False;
+	}
+
+	screen->active = True;
+}
+
+void
 screen_adopt(state_t *state, screen_t *screen, client_t *client)
 {
 	Bool dirty = False;
+	group_t *group;
 
-	group_assign(screen->desktops[screen->desktop_index], client);
+	group = group_assign(screen->desktops[screen->desktop_index], client);
+	group->desktop = screen->desktops[screen->desktop_index];
 
 	if (client->geometry.x + client->geometry.width < screen->geometry.x) {
 		client->geometry.x = screen->geometry.x;
@@ -37,6 +56,20 @@ screen_adopt(state_t *state, screen_t *screen, client_t *client)
 	if (dirty) {
 		client_move_resize(state, client, False);
 	}
+}
+
+screen_t *
+screen_find_active(state_t *state)
+{
+	screen_t *screen;
+
+	TAILQ_FOREACH(screen, &state->screens, entry) {
+		if (screen->active) {
+			return screen;
+		}
+	}
+
+	return NULL;
 }
 
 screen_t *
@@ -138,6 +171,7 @@ screen_init(state_t *state, char *name, RRCrtc id, geometry_t geometry, unsigned
 	screen->desktop_index = 0;
 	screen->desktops = calloc(screen->desktop_count, sizeof(desktop_t));
 	screen->desktops[screen->desktop_index] = desktop_init("Desktop");
+	screen->desktops[screen->desktop_index]->screen = screen;
 
 	screen_update_geometry(state, screen, geometry);
 

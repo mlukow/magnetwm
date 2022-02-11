@@ -37,6 +37,8 @@ typedef struct client_t {
 
 	Window window;
 
+	struct group_t *group;
+
 	char *name;
 	char *class_name;
 	char *instance_name;

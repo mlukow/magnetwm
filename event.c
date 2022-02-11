@@ -5,6 +5,8 @@
 
 #include "client.h"
 #include "config.h"
+#include "desktop.h"
+#include "group.h"
 #include "screen.h"
 #include "state.h"
 
@@ -25,8 +27,7 @@ event_handle_button_press(state_t *state, XButtonPressedEvent *event)
 	screen_t *screen;
 
 	screen = screen_for_point(state, event->x_root, event->y_root);
-	TAILQ_REMOVE(&state->screens, screen, entry);
-	TAILQ_INSERT_TAIL(&state->screens, screen, entry);
+	screen_activate(state, screen);
 
 	client = client_find(state, event->subwindow);
 	if (client) {
@@ -66,7 +67,6 @@ event_handle_configure_request(state_t *state, XConfigureRequestEvent *event)
 
 	client = client_find(state, event->window);
 	if (client) {
-		printf("configuring client\n");
 		if (event->value_mask & CWX) {
 			client->geometry.x = event->x;
 		}
@@ -86,8 +86,6 @@ event_handle_configure_request(state_t *state, XConfigureRequestEvent *event)
 		if (event->value_mask & CWBorderWidth) {
 			client->border_width = event->border_width;
 		}
-	} else {
-		printf("configuring empty\n");
 	}
 
 	changes.x = event->x;
@@ -141,9 +139,9 @@ event_handle_key_press(state_t *state, XKeyEvent *event)
 
 	client = client_find_active(state);
 	if (client) {
-		screen = screen_for_client(state, client);
+		screen = client->group->desktop->screen;
 	} else {
-		screen = NULL;
+		screen = screen_find_active(state);
 	}
 
 	keysym = XkbKeycodeToKeysym(state->display, event->keycode, 0, 0);

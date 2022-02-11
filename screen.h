@@ -15,6 +15,7 @@ typedef struct screen_t {
 
 	char *name;
 	RRCrtc id;
+	Bool active;
 	Bool wired;
 	unsigned long mm_width;
 	unsigned long mm_height;
@@ -26,7 +27,9 @@ typedef struct screen_t {
 	int desktop_index;
 } screen_t;
 
+void screen_activate(struct state_t *, screen_t *);
 void screen_adopt(struct state_t *, screen_t *, struct client_t *);
+screen_t *screen_find_active(struct state_t *);
 screen_t *screen_find_by_name(struct state_t *, char *);
 screen_t *screen_for_client(struct state_t *, struct client_t *);
 screen_t *screen_for_point(struct state_t *, int, int);

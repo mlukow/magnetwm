@@ -275,6 +275,7 @@ state_update_clients(state_t *state)
 	for (i = 0; i < count; i++) {
 		client = client_init(state, windows[i]);
 		screen = screen_for_client(state, client);
+		if (!screen)printf("##### nO SCREEN\n");
 		screen_adopt(state, screen, client);
 
 		client_activate(state, client);
@@ -290,7 +291,7 @@ state_update_screens(state_t *state)
 	client_t *client;
 	geometry_t geometry;
 	group_t *group;
-	int i;
+	int i, x, y;
 	screen_t *screen;
 	XRRCrtcInfo *crtc;
 	XRROutputInfo *output;
@@ -347,6 +348,21 @@ state_update_screens(state_t *state)
 		}
 
 		screen_free(screen);
+	}
+
+	screen = screen_find_active(state);
+	if (!screen) {
+		if (x_get_pointer(state->display, state->root, &x, &y)) {
+			screen = screen_for_point(state, x, y);
+		}
+
+		if (!screen) {
+			screen = TAILQ_LAST(&state->screens, screen_q);
+		}
+
+		if (screen) {
+			screen_activate(state, screen);
+		}
 	}
 
 	return True;

@@ -13,11 +13,12 @@ typedef struct group_t {
 
 	char *name;
 
+	struct desktop_t *desktop;
 	struct client_q clients;
 } group_t;
 
 group_t *group_assign(struct desktop_t *, struct client_t *);
 void group_free(group_t *);
-void group_unassign(struct desktop_t *, struct client_t *);
+void group_unassign(struct client_t *);
 
 #endif /* __GROUP_H__ */

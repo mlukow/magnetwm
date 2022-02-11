@@ -263,47 +263,25 @@ client_raise(state_t *state, client_t *client)
 void
 client_remove(state_t *state, client_t *client)
 {
-	client_t *current;
 	group_t *group;
-	int i;
-	screen_t *screen;
 
-	TAILQ_FOREACH(screen, &state->screens, entry) {
-		for (i = 0; i < screen->desktop_count; i++) {
-			TAILQ_FOREACH(group, &screen->desktops[i]->groups, entry) {
-				TAILQ_FOREACH(current, &group->clients, entry) {
-					if (current->window == client->window) {
-						group_unassign(screen->desktops[i], client);
-					}
-				}
-			}
-		}
-	}
 	/*
-	group_t *group;
-
 	x_ewmh_set_client_list(state);
 	x_ewmh_set_client_list_stacking(state);
 
-	if (client == client_active(state)) {
+	if (client->flags & CLIENT_ACTIVE) {
 		// TODO: ewmh set net active window to none
 	}
+	*/
 
-	group_unassign(state, client);
+	group = client->group;
+	group_unassign(client);
 	client_free(client);
 
-	group = TAILQ_LAST(&state->groups, group_q);
-	if (!group) {
-		return;
-	}
-
 	client = TAILQ_LAST(&group->clients, client_q);
-	if (!client) {
-		return;
+	if (client) {
+		client_activate(state, client);
 	}
-
-	client_activate(state, client);
-	*/
 }
 
 Atom *

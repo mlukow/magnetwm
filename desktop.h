@@ -4,6 +4,7 @@
 #include "queue.h"
 
 struct group_t;
+struct screen_t;
 
 TAILQ_HEAD(group_q, group_t);
 
@@ -13,6 +14,7 @@ typedef struct desktop_t {
 	char *name;
 
 	struct group_q groups;
+	struct screen_t *screen;
 } desktop_t;
 
 void desktop_free(desktop_t *);

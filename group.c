@@ -13,6 +13,7 @@ group_assign(desktop_t *desktop, client_t *client)
 	TAILQ_FOREACH(group, &desktop->groups, entry) {
 		if (strcmp(group->name, client->class_name) == 0) {
 			TAILQ_INSERT_TAIL(&group->clients, client, entry);
+			client->group = group;
 			return group;
 		}
 	}
@@ -21,6 +22,7 @@ group_assign(desktop_t *desktop, client_t *client)
 	group->name = strdup(client->class_name);
 	TAILQ_INIT(&group->clients);
 	TAILQ_INSERT_TAIL(&group->clients, client, entry);
+	client->group = group;
 
 	TAILQ_INSERT_TAIL(&desktop->groups, group, entry);
 
@@ -45,20 +47,13 @@ group_free(group_t *group)
 }
 
 void
-group_unassign(desktop_t *desktop, client_t *client)
+group_unassign(client_t *client)
 {
-	client_t *current_client;
-	group_t *current_group;
-
-	TAILQ_FOREACH(current_group, &desktop->groups, entry) {
-		TAILQ_FOREACH(current_client, &current_group->clients, entry) {
-			if (current_client == client) {
-				TAILQ_REMOVE(&current_group->clients, client, entry);
-				if (TAILQ_EMPTY(&current_group->clients)) {
-					TAILQ_REMOVE(&desktop->groups, current_group, entry);
-					group_free(current_group);
-				}
-			}
-		}
+	TAILQ_REMOVE(&client->group->clients, client, entry);
+	if (TAILQ_EMPTY(&client->group->clients)) {
+		TAILQ_REMOVE(&client->group->desktop->groups, client->group, entry);
+		group_free(client->group);
 	}
+
+	client->group = NULL;
 }
