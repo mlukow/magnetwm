@@ -5,6 +5,7 @@
 
 #include "client.h"
 #include "config.h"
+#include "desktop.h"
 #include "functions.h"
 #include "group.h"
 #include "menu.h"

@@ -20,6 +20,8 @@ group_assign(desktop_t *desktop, client_t *client)
 
 	group = calloc(1, sizeof(group_t));
 	group->name = strdup(client->class_name);
+	group->icon = client->icon;
+	group->icon_mask = client->icon_mask;
 	TAILQ_INIT(&group->clients);
 	TAILQ_INSERT_TAIL(&group->clients, client, entry);
 	client->group = group;

@@ -71,22 +71,16 @@ menu_add(menu_t *items, void *context, int sorted, char *(*print)(void *))
 int
 menu_calculate_entry(menu_context_t *context, int x, int y)
 {
-	int height;
-
-	if ((x < context->x) || (x > context->x + context->width)) {
+	if ((x < context->geometry.x) || (x > context->geometry.x + context->geometry.width)) {
 		return -1;
 	}
 
-	height = context->offset + MIN(context->limit, context->count) * (context->state->fonts[FONT_MENU_ITEM]->height + 1);
-	if (context->count > 0) {
-		height += 2 * context->padding;
-	}
-
-	if ((y < context->y + context->offset + context->padding) || (y >= context->y + height - context->padding)) {
+	if ((y < context->geometry.y + context->offset + context->padding) ||
+		(y >= context->geometry.y + context->geometry.height - context->padding)) {
 		return -1;
 	}
 
-	y -= context->y + context->offset + context->padding + context->border_width;
+	y -= context->geometry.y + context->offset + context->padding + context->border_width;
 
 	return y / (context->state->fonts[FONT_MENU_ITEM]->height + 1);
 }
@@ -95,17 +89,23 @@ void
 menu_draw(state_t *state, menu_context_t *context, menu_t *items, menu_t *results)
 {
 	char *text;
-	int i = 0, height, y;
+	int i = 0, y;
 	menu_item_t *item;
 	XftFont *font;
 
-	height = context->offset + MIN(context->limit, context->count) * (context->state->fonts[FONT_MENU_ITEM]->height + 1);
+	context->geometry.height = context->offset + MIN(context->limit, context->count) * (context->state->fonts[FONT_MENU_ITEM]->height + 1);
 	if (context->count > 0) {
-		height += 2 * context->padding;
+		context->geometry.height += 2 * context->padding;
 	}
 
 	XClearWindow(state->display, context->window);
-	XMoveResizeWindow(state->display, context->window, context->x, context->y, context->width, height);
+	XMoveResizeWindow(
+			state->display,
+			context->window,
+			context->geometry.x,
+			context->geometry.y,
+			context->geometry.width,
+			context->geometry.height);
 
 	if (context->prompt) {
 		if (context->filter_length == 0) {
@@ -133,7 +133,7 @@ menu_draw(state_t *state, menu_context_t *context, menu_t *items, menu_t *result
 				&context->state->colors[COLOR_MENU_SEPARATOR],
 				0,
 				context->offset - 1,
-				context->width,
+				context->geometry.width,
 				1);
 	}
 
@@ -182,7 +182,7 @@ menu_draw_entry(menu_context_t *context, menu_t *results, int entry, int selecte
 			&context->state->colors[color],
 			0,
 			context->offset + context->padding + entry * (font->height + 1),
-			context->width, font->height + 1);
+			context->geometry.width, font->height + 1);
 
 	color = selected ? COLOR_MENU_SELECTION_FOREGROUND : COLOR_MENU_FOREGROUND;
 	XftDrawStringUtf8(
@@ -240,7 +240,7 @@ menu_filter(state_t *state, screen_t *screen, menu_t *items, char *prompt, char 
 
 	TAILQ_INIT(&results);
 
-	context.width = MIN(0.3 * context.screen->geometry.width, 650);
+	context.geometry.width = MIN(0.3 * context.screen->geometry.width, 650);
 	if (prompt) {
 		context.offset = 2 * context.padding + context.state->fonts[FONT_MENU_INPUT]->height + 1;
 	} else {
@@ -256,8 +256,8 @@ menu_filter(state_t *state, screen_t *screen, menu_t *items, char *prompt, char 
 		return NULL;
 	}
 
-	context.x = (context.screen->geometry.width - context.width) / 2;
-	context.y = 0.2 * context.screen->geometry.height;
+	context.geometry.x = (context.screen->geometry.width - context.geometry.width) / 2;
+	context.geometry.y = 0.2 * context.screen->geometry.height;
 
 	context.visible = TAILQ_FIRST(&results);
 
@@ -561,19 +561,11 @@ menu_handle_move(menu_context_t *context, menu_t *results, int x, int y)
 int
 menu_handle_release(menu_context_t *context, int x, int y)
 {
-	int height;
-
-	if ((x < context->x) || (x > context->x + context->width)) {
+	if ((x < context->geometry.x) || (x > context->geometry.x + context->geometry.width)) {
 		return -1;
 	}
 
-	height =
-		context->offset + MIN(context->limit, context->count) * (context->state->fonts[FONT_MENU_ITEM]->height + 1);
-	if (context->count > 0) {
-		height += 2 * context->padding;
-	}
-
-	if ((y < context->y + context->offset) || (y >= context->y + height - context->padding)) {
+	if ((y < context->geometry.y + context->offset) || (y >= context->geometry.y + context->geometry.height - context->padding)) {
 		return -1;
 	}
 

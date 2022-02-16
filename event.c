@@ -154,14 +154,15 @@ event_handle_map_request(state_t *state, XMapRequestEvent *event)
 
 	client = client_find(state, event->window);
 	if (!client) {
-		client = client_init(state, event->window);
-		if (client) {
-			screen_adopt(state, screen, client);
+		client = client_init(state, event->window, False);
+		if (!client) {
+			return;
 		}
+
+		screen_adopt(state, screen, client);
 	}
 
-	XMapWindow(state->display, client->window);
-
+	client_show(state, client);
 	client_activate(state, client);
 }
 

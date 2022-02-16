@@ -36,6 +36,8 @@ typedef struct client_t {
 	TAILQ_ENTRY(client_t) entry;
 
 	Window window;
+	Pixmap icon;
+	Pixmap icon_mask;
 
 	struct group_t *group;
 
@@ -70,7 +72,7 @@ client_t *client_find(struct state_t *, Window);
 client_t *client_find_active(struct state_t *);
 void client_free(client_t *);
 void client_hide(struct state_t *, client_t *);
-client_t *client_init(struct state_t *, Window);
+client_t *client_init(struct state_t *, Window, Bool);
 void client_lower(struct state_t *, client_t *);
 void client_move_resize(struct state_t *, client_t *, Bool);
 void client_raise(struct state_t *, client_t *);

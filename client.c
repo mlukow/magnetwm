@@ -180,17 +180,27 @@ client_hide(state_t *state, client_t *client)
 }
 
 client_t *
-client_init(state_t *state, Window window)
+client_init(state_t *state, Window window, Bool initial)
 {
 	client_t *client;
 	XWindowAttributes attributes;
+
+	if (window == None) {
+		return NULL;
+	}
 
 	if (!XGetWindowAttributes(state->display, window, &attributes)) {
 		return NULL;
 	}
 
-	if (attributes.override_redirect || (attributes.map_state != IsViewable)) {
-		return NULL;
+	if (initial) {
+		if (attributes.override_redirect) {
+			return NULL;
+		}
+
+		if (attributes.map_state != IsViewable) {
+			return NULL;
+		}
 	}
 
 	client = calloc(1, sizeof(client_t));
@@ -635,7 +645,8 @@ client_update_wm_hints(state_t *state, client_t *client)
 		client->initial_state = hints->initial_state;
 	}
 
-	// TODO: icon
+	client->icon = hints->icon_pixmap;
+	client->icon_mask = hints->icon_mask;
 
 	XFree(hints);
 }

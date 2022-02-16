@@ -4,6 +4,7 @@
 #include <X11/Xft/Xft.h>
 
 #include "queue.h"
+#include "xutils.h"
 
 typedef struct menu_t menu_t;
 
@@ -25,9 +26,7 @@ typedef struct menu_context_t {
 	Window window;
 	XftDraw *draw;
 
-	int x;
-	int y;
-	int width;
+	geometry_t geometry;
 	int offset;
 
 	int padding;
