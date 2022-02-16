@@ -189,7 +189,7 @@ client_init(state_t *state, Window window)
 		return NULL;
 	}
 
-	if (attributes.override_redirect) {
+	if (attributes.override_redirect || (attributes.map_state != IsViewable)) {
 		return NULL;
 	}
 
