@@ -12,7 +12,6 @@
 
 void event_handle_button_press(state_t *, XButtonPressedEvent *);
 void event_handle_configure_request(state_t *, XConfigureRequestEvent *);
-void event_handle_create_notify(state_t *, XCreateWindowEvent *);
 void event_handle_destroy_notify(state_t *, XDestroyWindowEvent *);
 void event_handle_key_press(state_t *, XKeyEvent *);
 void event_handle_leave_notify(state_t *, XCrossingEvent *);
@@ -55,7 +54,7 @@ event_handle_button_press(state_t *state, XButtonPressedEvent *event)
 		}
 	}
 
-	XAllowEvents(state->display, ReplayPointer, event->time); // SyncPointer
+	XAllowEvents(state->display, ReplayPointer, event->time);
 	XSync(state->display, 0);
 }
 
@@ -97,23 +96,6 @@ event_handle_configure_request(state_t *state, XConfigureRequestEvent *event)
 	changes.stack_mode = event->detail;
 
 	XConfigureWindow(state->display, event->window, event->value_mask, &changes);
-}
-
-void
-event_handle_create_notify(state_t *state, XCreateWindowEvent *event)
-{
-	client_t *client;
-	screen_t *screen;
-
-	client = client_find(state, event->window);
-	if (client) {
-		return;
-	}
-
-	screen = TAILQ_LAST(&state->screens, screen_q);
-
-	client = client_init(state, event->window);
-	screen_adopt(state, screen, client);
 }
 
 void
@@ -166,10 +148,16 @@ void
 event_handle_map_request(state_t *state, XMapRequestEvent *event)
 {
 	client_t *client;
+	screen_t *screen;
+
+	screen = TAILQ_LAST(&state->screens, screen_q);
 
 	client = client_find(state, event->window);
 	if (!client) {
-		return;
+		client = client_init(state, event->window);
+		if (client) {
+			screen_adopt(state, screen, client);
+		}
 	}
 
 	XMapWindow(state->display, client->window);
@@ -225,12 +213,13 @@ event_process(state_t *state)
 
 		switch (event.type) {
 			case KeyPress:
-				printf("key press\n");
 				event_handle_key_press(state, &event.xkey);
 				break;
+				/*
 			case KeyRelease:
-				printf("key release\n");
+				printf("key release: %ld\n", event.xkey.time);
 				break;
+				*/
 			case ButtonPress:
 				event_handle_button_press(state, &event.xbutton);
 				break;
@@ -269,9 +258,11 @@ event_process(state_t *state)
 			case VisibilityNotify:
 				printf("visibility notify\n");
 				break;
+				/*
 			case CreateNotify:
 				event_handle_create_notify(state, &event.xcreatewindow);
 				break;
+				*/
 			case DestroyNotify:
 				event_handle_destroy_notify(state, &event.xdestroywindow);
 				break;

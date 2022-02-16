@@ -53,26 +53,31 @@ static const struct {
 	binding_context_t context;
 	long flag;
 } name_to_func[] = {
+#define FUNC_CC(t, h, n) #t, function_ ## h, BINDING_CONTEXT_CLIENT, n
+#define FUNC_SC(t, h, n) #t, function_ ## h, BINDING_CONTEXT_SCREEN, n
+#define FUNC_GC(t, h, n) #t, function_ ## h, BINDING_CONTEXT_GLOBAL, n
 /*
 	{ "group-cycle", function_group_cycle, 0 },
 	{ "group-rcycle", function_group_cycle, 1 },
 	{ "firefox", function_firefox, 0 },
 	*/
+	{ FUNC_SC(menu-exec, menu_exec, 0) },
+	{ FUNC_SC(menu-command, menu_command, 0) },
 	{ "terminal", function_terminal, BINDING_CONTEXT_GLOBAL, 0 },
-	{ "window-center", function_window_center, BINDING_CONTEXT_CLIENT, 0 },
+	{ FUNC_CC(window-center, window_center, 0) },
 	/*
 	{ "window-cycle", function_window_cycle, 0 },
 	*/
-	{ "window-tile-up", function_window_tile, BINDING_CONTEXT_CLIENT, 1 },
-	{ "window-tile-up-right", function_window_tile, BINDING_CONTEXT_CLIENT, 9 },
-	{ "window-tile-right", function_window_tile, BINDING_CONTEXT_CLIENT, 8 },
-	{ "window-tile-down", function_window_tile, BINDING_CONTEXT_CLIENT, 2 },
-	{ "window-tile-down-right", function_window_tile, BINDING_CONTEXT_CLIENT, 10 },
-	{ "window-tile-down-left", function_window_tile, BINDING_CONTEXT_CLIENT, 6 },
-	{ "window-tile-left", function_window_tile, BINDING_CONTEXT_CLIENT, 4 },
-	{ "window-tile-up-left", function_window_tile, BINDING_CONTEXT_CLIENT, 5 },
-	{ "window-move", function_window_move, BINDING_CONTEXT_CLIENT, 0 },
-	{ "window-resize", function_window_resize, BINDING_CONTEXT_CLIENT, 0 },
+	{ FUNC_CC(window-tile-up, window_tile, 1) },
+	{ FUNC_CC(window-tile-up-right, window_tile, 9) },
+	{ FUNC_CC(window-tile-right, window_tile, 8) },
+	{ FUNC_CC(window-tile-down, window_tile, 2) },
+	{ FUNC_CC(window-tile-down-right, window_tile, 10) },
+	{ FUNC_CC(window-tile-down-left, window_tile, 6) },
+	{ FUNC_CC(window-tile-left, window_tile, 4) },
+	{ FUNC_CC(window-tile-up-left, window_tile, 5) },
+	{ FUNC_CC(window-move, window_move, 0) },
+	{ FUNC_CC(window-resize, window_resize, 0) },
 };
 
 TAILQ_HEAD(files, file_t) files = TAILQ_HEAD_INITIALIZER(files);
@@ -127,6 +132,7 @@ static config_t *config;
 %token MENUPROMPT
 %token MENUSELECTIONBACKGROUND
 %token MENUSELECTIONFOREGROUND
+%token MENUSEPARATOR
 %token NO
 %token YES
 
@@ -181,6 +187,10 @@ colors	: BORDERACTIVE STRING {
 		| MENUSELECTIONFOREGROUND STRING {
 			 free(config->colors[COLOR_MENU_SELECTION_FOREGROUND]);
 			 config->colors[COLOR_MENU_FOREGROUND] = $2;
+		}
+		| MENUSEPARATOR STRING {
+			free(config->colors[COLOR_MENU_SEPARATOR]);
+			config->colors[COLOR_MENU_SEPARATOR] = $2;
 		}
 		;
 
@@ -344,6 +354,7 @@ lookup(char *s)
 		{ "menu-prompt", MENUPROMPT },
 		{ "menu-selection-background", MENUSELECTIONFOREGROUND },
 		{ "menu-selection-foreground", MENUSELECTIONFOREGROUND },
+		{ "menu-separator", MENUSEPARATOR },
 		{ "no", NO },
 		{ "yes", YES }
 	};
@@ -686,7 +697,8 @@ config_init(char *path)
 	config->colors[COLOR_MENU_FOREGROUND] = strdup("white");
 	config->colors[COLOR_MENU_PROMPT] = strdup("darkgray");
 	config->colors[COLOR_MENU_SELECTION_BACKGROUND] = strdup("blue");
-	config->colors[COLOR_MENU_SELECTION_FOREGROUND] = strdup("black");
+	config->colors[COLOR_MENU_SELECTION_FOREGROUND] = strdup("white");
+	config->colors[COLOR_MENU_SEPARATOR] = strdup("darkgray");
 
 	config->fonts[FONT_MENU_INPUT] = strdup("sans-serif:pixelsize=14:bold");
 	config->fonts[FONT_MENU_ITEM] = strdup("sans-serif:pixelsize=14:bold");

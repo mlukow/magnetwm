@@ -2,9 +2,9 @@ PROG=		torwm
 
 PREFIX?=	/usr/local
 
-SRCS=		client.c config.y desktop.c event.c functions.c group.c main.c screen.c state.c utils.c xutils.c
+SRCS=		client.c config.y desktop.c event.c functions.c group.c main.c menu.c screen.c state.c utils.c xutils.c
 
-OBJS=		client.o config.o desktop.o event.o functions.o group.o main.o screen.o state.o utils.o xutils.o
+OBJS=		client.o config.o desktop.o event.o functions.o group.o main.o menu.o screen.o state.o utils.o xutils.o
 		
 PKG_CONFIG?=	pkg-config
 

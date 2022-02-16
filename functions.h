@@ -3,6 +3,8 @@
 
 struct state_t;
 
+void function_menu_command(struct state_t *, void *, long);
+void function_menu_exec(struct state_t *, void *, long);
 void function_terminal(struct state_t *, void *, long);
 void function_window_center(struct state_t *, void *, long);
 void function_window_move(struct state_t *, void *, long);

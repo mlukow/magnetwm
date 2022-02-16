@@ -59,7 +59,7 @@ state_error_handler(Display *display, XErrorEvent *event)
 	XGetErrorText(display, event->error_code, message, sizeof(message));
 	snprintf(number, sizeof(number), "%d", event->request_code);
 	XGetErrorDatabaseText(display, "XRequest", number, "<unknown>", request, sizeof(request));
-	fprintf(stderr, "%s(0x%x): %s", request, (unsigned int)event->resourceid, message);
+	fprintf(stderr, "%s(0x%x): %s\n", request, (unsigned int)event->resourceid, message);
 
 	return 0;
 }

@@ -1,4 +1,5 @@
 #include <errno.h>                                                                                                      
+#include <locale.h>
 #include <poll.h>                                                                                                       
 #include <pwd.h>
 #include <stdio.h>                                                                                                      
@@ -45,6 +46,12 @@ main(int argc, char **argv)
     state_t *state;
 	struct passwd *pw;
     struct pollfd pfd[1];
+
+	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale()) {
+		fprintf(stderr, "No locale support");
+	}
+
+	mbtowc(NULL, NULL, MB_CUR_MAX);
 
 	home = getenv("HOME");
 	if ((home == NULL) || (*home == '\0')) {
