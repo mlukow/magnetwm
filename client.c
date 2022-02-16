@@ -214,7 +214,9 @@ client_init(state_t *state, Window window)
 	client_restore_net_wm_state(state, client);
 
 	if (attributes.map_state != IsViewable) {
-
+		if (client->initial_state) {
+			client_set_wm_state(state, client, client->initial_state);
+		}
 	}
 
 	client_configure(state, client);
@@ -644,7 +646,9 @@ client_update_wm_name(state_t *state, client_t *client)
 	XTextProperty text;
 
 	if (XGetTextProperty(state->display, client->window, &text, state->atoms[_NET_WM_NAME]) != Success) {
-		return;
+		if (!XGetWMName(state->display, client->window, &text)) {
+			return;
+		}
 	}
 
 	if (text.nitems == 0) {

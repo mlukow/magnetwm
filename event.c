@@ -252,9 +252,11 @@ event_process(state_t *state)
 			case GraphicsExpose:
 				printf("graphics expose\n");
 				break;
+				/*
 			case NoExpose:
 				printf("no expose\n");
 				break;
+				*/
 			case VisibilityNotify:
 				printf("visibility notify\n");
 				break;
