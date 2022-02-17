@@ -330,6 +330,9 @@ event_handle_map_request(state_t *state, XMapRequestEvent *event)
 
 	client_show(state, client);
 	client_activate(state, client);
+
+	TAILQ_REMOVE(&client->group->desktop->groups, client->group, entry);
+	TAILQ_INSERT_TAIL(&client->group->desktop->groups, client->group, entry);
 }
 
 void
@@ -393,10 +396,10 @@ event_process(state_t *state)
 			case ButtonRelease:
 				printf("button release\n");
 				break;
+				/*
 			case MotionNotify:
 				printf("motion notify\n");
 				break;
-				/*
 			case EnterNotify:
 				event_handle_enter_notify(state, &event.xcrossing);
 				break;

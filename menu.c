@@ -17,6 +17,7 @@
 		PointerMotionMask	|	\
 		ButtonMotionMask	|	\
 		KeyPressMask		|	\
+		KeyReleaseMask		|	\
 		ExposureMask)
 #define MENUGRABMASK (			\
 		ButtonPressMask		|	\
@@ -104,6 +105,8 @@ menu_cycle(menu_t *menu)
 		return NULL;
 	}
 
+	menu->selected_item = 1;
+	menu->selected_visible = 1;
 	menu->geometry.height = 180;
 	menu->geometry.width = menu->count * menu->geometry.height;
 	menu->geometry.x = menu->screen->geometry.x + (menu->screen->geometry.width - menu->geometry.width) / 2;
@@ -159,6 +162,12 @@ menu_cycle(menu_t *menu)
 				if (i == 1) {
 					menu_draw_horizontal(menu);
 				} else if ((i == -1) || ((i == 2) && (menu->count > 0))) {
+					processing = 0;
+				}
+
+				break;
+			case KeyRelease:
+				if ((event.xkey.keycode == 0x40) && (event.xkey.state & Mod1Mask)) {
 					processing = 0;
 				}
 
@@ -751,7 +760,9 @@ menu_handle_key(menu_t *menu, XKeyEvent *event, Bool cycle)
 		case XK_Return:
 			return 2;
 		case XK_Tab:
-			return menu_filter_complete(menu);
+			return cycle ? menu_move_right(menu) : menu_filter_complete(menu);
+		case XK_ISO_Left_Tab:
+			return cycle ? menu_move_left(menu) : 0;
 		case XK_b:
 			return (cycle && (event->state & ControlMask)) ? menu_move_left(menu) : 0;
 		case XK_Left:
@@ -916,13 +927,33 @@ menu_move_down(menu_t *menu)
 int
 menu_move_left(menu_t *menu)
 {
-	return menu_move_up(menu);
+	int result;
+
+	result = menu_move_up(menu);
+	if (result == 0) {
+		//menu->visible = TAILQ_LAST(&menu->items, menu_item_q);
+		menu->selected_item = menu->count - 1;
+		menu->selected_visible = menu->count - 1;
+		result = 1;
+	}
+
+	return result;
 }
 
 int
 menu_move_right(menu_t *menu)
 {
-	return menu_move_down(menu);
+	int result;
+
+	result = menu_move_down(menu);
+	if (result == 0) {
+		//menu->visible = TAILQ_FIRST(&menu->items);
+		menu->selected_item = 0;
+		menu->selected_visible = 0;
+		result = 1;
+	}
+
+	return result;
 }
 
 int

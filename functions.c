@@ -22,20 +22,32 @@
 void
 function_group_cycle(state_t *state, void *context, long flag)
 {
-	group_t *group;
+	client_t *client;
+	desktop_t *desktop;
+	group_t *current, *group;
 	menu_t *menu;
 	screen_t *screen = (screen_t *)context;
 
+	desktop = screen->desktops[screen->desktop_index];
 	menu = menu_init(state, screen, NULL);
 
-	TAILQ_FOREACH(group, &screen->desktops[screen->desktop_index]->groups, entry) {
+	TAILQ_FOREACH_REVERSE(group, &desktop->groups, group_q, entry) {
 		menu_add(menu, group, 0, group->name, group->icon, group->mask);
 	}
 
 	group = (group_t *)menu_cycle(menu);
 
 	if (group) {
-		printf("switching to group %s\n", group->name);
+		current = TAILQ_LAST(&desktop->groups, group_q);
+		if (current != group) {
+			TAILQ_REMOVE(&desktop->groups, group, entry);
+			TAILQ_INSERT_TAIL(&desktop->groups, group, entry);
+
+			TAILQ_FOREACH(client, &group->clients, entry) {
+				client_raise(state, client);
+				client_activate(state, client);
+			}
+		}
 	}
 
 	menu_free(menu);
