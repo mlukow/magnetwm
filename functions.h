@@ -3,6 +3,7 @@
 
 struct state_t;
 
+void function_group_cycle(struct state_t *, void *, long);
 void function_menu_command(struct state_t *, void *, long);
 void function_menu_exec(struct state_t *, void *, long);
 void function_terminal(struct state_t *, void *, long);

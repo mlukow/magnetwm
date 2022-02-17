@@ -8,11 +8,11 @@ OBJS=		client.o config.o desktop.o event.o functions.o group.o main.o menu.o scr
 		
 PKG_CONFIG?=	pkg-config
 
-CPPFLAGS+=	`$(PKG_CONFIG) --cflags x11 xft xrandr`
+CPPFLAGS+=	`$(PKG_CONFIG) --cflags x11 xft xrandr xrender`
 
 CFLAGS?=	-Wall -O2 -g -D_GNU_SOURCE
 
-LDFLAGS+=	`$(PKG_CONFIG) --libs x11 xft xrandr`
+LDFLAGS+=	`$(PKG_CONFIG) --libs x11 xft xrandr xrender`
 
 MANPREFIX?=	$(PREFIX)/share/man
 

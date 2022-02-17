@@ -19,46 +19,60 @@
 #define LEFT 0x04
 #define RIGHT 0x08
 
-char *format_command(void *);
-char *format_group(void *);
-char *format_path(void *);
+char *command_text(void *);
+Pixmap group_icon(void *);
+Pixmap group_mask(void *);
+char *group_text(void *);
+char *path_text(void *);
 
 char *
-format_command(void *context)
+command_text(void *context)
 {
 	return ((command_t *)context)->name;
 }
 
-char *
-format_group(void *context)
+void
+function_group_cycle(state_t *state, void *context, long flag)
 {
-	return ((group_t *)context)->name;
-}
+	group_t *group;
+	menu_t *menu;
+	screen_t *screen = (screen_t *)context;
 
-char *
-format_path(void *context)
-{
-	return (char *)context;
+	menu = menu_init(state, screen, NULL);
+
+	TAILQ_FOREACH(group, &screen->desktops[screen->desktop_index]->groups, entry) {
+		menu_add(menu, group, 0, group_text);
+	}
+
+	group = (group_t *)menu_cycle(menu, group_icon, group_mask);
+
+	if (group) {
+		printf("switching to group %s\n", group->name);
+	}
+
+	menu_free(menu);
 }
 
 void
 function_menu_command(state_t *state, void *context, long flag)
 {
 	command_t *command;
-	menu_t items;
+	menu_t *menu;
 	screen_t *screen = (screen_t *)context;
 
-	TAILQ_INIT(&items);
+	menu = menu_init(state, screen, NULL);
 
 	TAILQ_FOREACH(command, &state->config->commands, entry) {
-		menu_add(&items, command, 1, format_command);
+		menu_add(menu, command, 1, command_text);
 	}
 
-	command = (command_t *)menu_filter(state, screen, &items, NULL, format_command);
+	command = (command_t *)menu_filter(menu);
 
 	if (command) {
 		xspawn(command->path);
 	}
+
+	menu_free(menu);
 }
 
 void
@@ -67,12 +81,12 @@ function_menu_exec(state_t *state, void *context, long flag)
 	char *path, *paths, tpath[PATH_MAX];
 	DIR *dirp;
 	int i;
-	menu_t items;
+	menu_t *menu;
 	screen_t *screen = (screen_t *)context;
 	struct dirent *dp;
 	struct stat sb;
 
-	TAILQ_INIT(&items);
+	menu = menu_init(state, screen, "Run");
 
 	paths = getenv("PATH");
 	if (!paths) {
@@ -107,19 +121,20 @@ function_menu_exec(state_t *state, void *context, long flag)
 			}
 
 			if (access(tpath, X_OK) == 0) {
-				menu_add(&items, strdup(dp->d_name), 1, format_path);
+				menu_add(menu, strdup(dp->d_name), 1, path_text);
 			}
 		}
 
 		closedir(dirp);
 	}
 
-	path = (char *)menu_filter(state, screen, &items, "Run", format_path);
+	path = (char *)menu_filter(menu);
 
 	if (path) {
 		xspawn(path);
 	}
 
+	menu_free(menu);
 	free(paths);
 }
 
@@ -316,4 +331,28 @@ function_window_tile(state_t *state, void *context, long flag)
 	}
 
 	client_move_resize(state, client, False);
+}
+
+Pixmap
+group_icon(void *context)
+{
+	return ((group_t *)context)->icon;
+}
+
+Pixmap
+group_mask(void *context)
+{
+	return ((group_t *)context)->icon_mask;
+}
+
+char *
+group_text(void *context)
+{
+	return ((group_t *)context)->name;
+}
+
+char *
+path_text(void *context)
+{
+	return (char *)context;
 }

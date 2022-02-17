@@ -61,6 +61,7 @@ static const struct {
 	{ "group-rcycle", function_group_cycle, 1 },
 	{ "firefox", function_firefox, 0 },
 	*/
+	{ FUNC_SC(group-cycle, group_cycle, 0) },
 	{ FUNC_SC(menu-exec, menu_exec, 0) },
 	{ FUNC_SC(menu-command, menu_command, 0) },
 	{ "terminal", function_terminal, BINDING_CONTEXT_GLOBAL, 0 },

@@ -293,6 +293,18 @@ client_remove(state_t *state, client_t *client)
 	client = TAILQ_LAST(&group->clients, client_q);
 	if (client) {
 		client_activate(state, client);
+	} else {
+		group = TAILQ_LAST(&group->desktop->groups, group_q);
+		if (group) {
+			TAILQ_FOREACH(client, &group->clients, entry) {
+				client_raise(state, client);
+			}
+
+			client = TAILQ_LAST(&group->clients, client_q);
+			if (client) {
+				client_activate(state, client);
+			}
+		}
 	}
 }
 
