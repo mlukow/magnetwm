@@ -18,8 +18,8 @@ typedef struct menu_item_t {
 	void *context;
 
 	char *text;
-	Picture icon;
-	Picture mask;
+	Pixmap icon;
+	Pixmap mask;
 } menu_item_t;
 
 typedef struct menu_t {
@@ -50,13 +50,10 @@ typedef struct menu_t {
 	int selected_previous;
 	int selected_visible;
 	menu_item_t *visible;
-
-	Pixmap (*icon)(void *);
-	Pixmap (*mask)(void *);
 } menu_t;
 
-void menu_add(menu_t *, void *, Bool, char *(*)(void *));
-void *menu_cycle(menu_t *, Pixmap(*)(void *), Pixmap(*)(void *));
+void menu_add(menu_t *, void *, Bool, char *, Pixmap, Pixmap);
+void *menu_cycle(menu_t *);
 void *menu_filter(menu_t *);
 void menu_free(menu_t *);
 menu_t *menu_init(struct state_t *, struct screen_t *, char *);

@@ -43,14 +43,16 @@ int menu_move_right(menu_t *);
 int menu_move_up(menu_t *);
 
 void
-menu_add(menu_t *menu, void *context, Bool sorted, char *(*text)(void *))
+menu_add(menu_t *menu, void *context, Bool sorted, char *text, Pixmap icon, Pixmap mask)
 {
 	int cmp;
 	menu_item_t *current, *item;
 
 	item = malloc(sizeof(menu_item_t));
 	item->context = context;
-	item->text = (*text)(context);
+	item->text = text;
+	item->icon = icon;
+	item->mask = mask;
 
 	if (sorted) {
 		TAILQ_FOREACH(current, &menu->items, item) {
@@ -86,7 +88,7 @@ menu_calculate_entry(menu_t *menu, int x, int y)
 }
 
 void *
-menu_cycle(menu_t *menu, Pixmap (*icon)(void *), Pixmap (*mask)(void *))
+menu_cycle(menu_t *menu)
 {
 	int focusrevert, i = 0, processing = 1;
 	menu_item_t *item;
@@ -107,8 +109,6 @@ menu_cycle(menu_t *menu, Pixmap (*icon)(void *), Pixmap (*mask)(void *))
 	menu->geometry.x = menu->screen->geometry.x + (menu->screen->geometry.width - menu->geometry.width) / 2;
 	menu->geometry.y = menu->screen->geometry.y + (menu->screen->geometry.height - menu->geometry.height) / 2;
 
-	menu->icon = icon;
-	menu->mask = mask;
 	menu->visible = TAILQ_FIRST(&menu->results);
 
 	XSelectInput(menu->state->display, menu->window, MENUMASK);
@@ -216,7 +216,6 @@ menu_draw_entry_horizontal(menu_t *menu, int entry, Bool selected)
 	int i, x, y;
 	menu_item_t *item = menu->visible;
 	Picture icon_picture, mask_picture;
-	Pixmap icon, mask;
 	unsigned int border_width, depth, height, width;
 	Window root;
 	XftFont *font;
@@ -236,17 +235,15 @@ menu_draw_entry_horizontal(menu_t *menu, int entry, Bool selected)
 	memset(&transform, 0, sizeof(XTransform));
 	transform.matrix[2][2] = XDoubleToFixed(1);
 
-	icon = (*menu->icon)(item->context);
-	mask = (*menu->mask)(item->context);
 	font = menu->state->fonts[FONT_MENU_ITEM];
 
-	XGetGeometry(menu->state->display, icon, &root, &x, &y, &width, &height, &border_width, &depth);
+	XGetGeometry(menu->state->display, item->icon, &root, &x, &y, &width, &height, &border_width, &depth);
 	transform.matrix[0][0] = XDoubleToFixed((double)width / size);
 	transform.matrix[1][1] = XDoubleToFixed((double)height / size);
 
 	icon_picture = XRenderCreatePicture(
 			menu->state->display,
-			icon,
+			item->icon,
 			XRenderFindVisualFormat(menu->state->display, menu->state->visual),
 			0,
 			NULL);
@@ -254,7 +251,7 @@ menu_draw_entry_horizontal(menu_t *menu, int entry, Bool selected)
 
 	mask_picture = XRenderCreatePicture(
 			menu->state->display,
-			mask,
+			item->mask,
 			XRenderFindStandardFormat(menu->state->display, PictStandardA1),
 			0,
 			NULL);
@@ -345,7 +342,6 @@ menu_draw_horizontal(menu_t *menu)
 	int i = 0, x, y;
 	menu_item_t *item;
 	Picture icon_picture, mask_picture;
-	Pixmap icon, mask;
 	unsigned int border_width, depth, height, width;
 	Window root;
 	XTransform transform;
@@ -359,16 +355,13 @@ menu_draw_horizontal(menu_t *menu)
 
 	item = menu->visible;
 	while ((i < menu->limit) && item) {
-		icon = (*menu->icon)(item->context);
-		mask = (*menu->mask)(item->context);
-
-		XGetGeometry(menu->state->display, icon, &root, &x, &y, &width, &height, &border_width, &depth);
+		XGetGeometry(menu->state->display, item->icon, &root, &x, &y, &width, &height, &border_width, &depth);
 		transform.matrix[0][0] = XDoubleToFixed((double)width / size);
 		transform.matrix[1][1] = XDoubleToFixed((double)height / size);
 
 		icon_picture = XRenderCreatePicture(
 				menu->state->display,
-				icon,
+				item->icon,
 				XRenderFindVisualFormat(menu->state->display, menu->state->visual),
 				0,
 				NULL);
@@ -376,7 +369,7 @@ menu_draw_horizontal(menu_t *menu)
 
 		mask_picture = XRenderCreatePicture(
 				menu->state->display,
-				mask,
+				item->mask,
 				XRenderFindStandardFormat(menu->state->display, PictStandardA1),
 				0,
 				NULL);

@@ -14,7 +14,7 @@ typedef struct group_t {
 	TAILQ_ENTRY(group_t) entry;
 
 	Pixmap icon;
-	Pixmap icon_mask;
+	Pixmap mask;
 
 	char *name;
 

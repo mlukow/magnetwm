@@ -37,7 +37,7 @@ typedef struct client_t {
 
 	Window window;
 	Pixmap icon;
-	Pixmap icon_mask;
+	Pixmap mask;
 
 	struct group_t *group;
 

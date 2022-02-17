@@ -19,18 +19,6 @@
 #define LEFT 0x04
 #define RIGHT 0x08
 
-char *command_text(void *);
-Pixmap group_icon(void *);
-Pixmap group_mask(void *);
-char *group_text(void *);
-char *path_text(void *);
-
-char *
-command_text(void *context)
-{
-	return ((command_t *)context)->name;
-}
-
 void
 function_group_cycle(state_t *state, void *context, long flag)
 {
@@ -41,10 +29,10 @@ function_group_cycle(state_t *state, void *context, long flag)
 	menu = menu_init(state, screen, NULL);
 
 	TAILQ_FOREACH(group, &screen->desktops[screen->desktop_index]->groups, entry) {
-		menu_add(menu, group, 0, group_text);
+		menu_add(menu, group, 0, group->name, group->icon, group->mask);
 	}
 
-	group = (group_t *)menu_cycle(menu, group_icon, group_mask);
+	group = (group_t *)menu_cycle(menu);
 
 	if (group) {
 		printf("switching to group %s\n", group->name);
@@ -63,7 +51,7 @@ function_menu_command(state_t *state, void *context, long flag)
 	menu = menu_init(state, screen, NULL);
 
 	TAILQ_FOREACH(command, &state->config->commands, entry) {
-		menu_add(menu, command, 1, command_text);
+		menu_add(menu, command, 1, command->name, None, None);
 	}
 
 	command = (command_t *)menu_filter(menu);
@@ -121,7 +109,7 @@ function_menu_exec(state_t *state, void *context, long flag)
 			}
 
 			if (access(tpath, X_OK) == 0) {
-				menu_add(menu, strdup(dp->d_name), 1, path_text);
+				menu_add(menu, strdup(dp->d_name), 1, path, None, None);
 			}
 		}
 
@@ -331,28 +319,4 @@ function_window_tile(state_t *state, void *context, long flag)
 	}
 
 	client_move_resize(state, client, False);
-}
-
-Pixmap
-group_icon(void *context)
-{
-	return ((group_t *)context)->icon;
-}
-
-Pixmap
-group_mask(void *context)
-{
-	return ((group_t *)context)->icon_mask;
-}
-
-char *
-group_text(void *context)
-{
-	return ((group_t *)context)->name;
-}
-
-char *
-path_text(void *context)
-{
-	return (char *)context;
 }

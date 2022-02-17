@@ -668,7 +668,7 @@ client_update_wm_hints(state_t *state, client_t *client)
 	}
 
 	client->icon = hints->icon_pixmap;
-	client->icon_mask = hints->icon_mask;
+	client->mask = hints->icon_mask;
 
 	XFree(hints);
 }
