@@ -35,6 +35,7 @@ typedef enum ewmh_t {
 	_NET_WM_ICON_NAME,
 	_NET_WM_VISIBLE_ICON_NAME,
 	_NET_WM_DESKTOP,
+	_NET_CLOSE_WINDOW,
 	_NET_WM_WINDOW_TYPE,
 	_NET_WM_STATE,
 	_NET_WM_ALLOWED_ACTIONS,
@@ -63,6 +64,12 @@ typedef enum ewmh_t {
 
 	EWMH_NITEMS
 } ewmh_t;
+
+typedef enum net_wm_state_t {
+    _NET_WM_STATE_REMOVE,
+    _NET_WM_STATE_ADD,
+    _NET_WM_STATE_TOGGLE
+} net_wm_state_t;
 
 typedef struct geometry_t {
 	int x;

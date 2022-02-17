@@ -49,6 +49,16 @@ client_activate(state_t *state, client_t *client)
 }
 
 void
+client_close(state_t *state, client_t *client)
+{
+	if (client->flags & CLIENT_WM_DELETE_WINDOW) {
+		client_send_message(state, client, state->atoms[WM_DELETE_WINDOW], CurrentTime);
+	} else {
+		XKillClient(state->display, client->window);
+	}
+}
+
+void
 client_configure(state_t *state, client_t *client)
 {
 	XConfigureEvent event;

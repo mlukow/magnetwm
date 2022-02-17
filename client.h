@@ -66,6 +66,7 @@ typedef struct client_t {
 } client_t;
 
 void client_activate(struct state_t *, client_t *);
+void client_close(struct state_t *, client_t *);
 void client_deactivate(struct state_t *, client_t *);
 void client_draw_border(struct state_t *, client_t *);
 client_t *client_find(struct state_t *, Window);

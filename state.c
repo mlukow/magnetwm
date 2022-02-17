@@ -226,6 +226,7 @@ state_init_atoms(state_t *state)
 		"_NET_WM_ICON_NAME",
 		"_NET_WM_VISIBLE_ICON_NAME",
 		"_NET_WM_DESKTOP",
+		"_NET_CLOSE_WINDOW",
 		"_NET_WM_WINDOW_TYPE",
 		"_NET_WM_STATE",
 		"_NET_WM_ALLOWED_ACTIONS",
@@ -251,8 +252,8 @@ state_init_atoms(state_t *state)
 		"_CWM_WM_STATE_FREEZE",
 	};
 
-	state->atoms = calloc(32, sizeof(Atom));
-	if (!XInternAtoms(state->display, names, 33, False, state->atoms)) {
+	state->atoms = calloc(34, sizeof(Atom));
+	if (!XInternAtoms(state->display, names, 34, False, state->atoms)) {
 		free(state->atoms);
 		return False;
 	}
