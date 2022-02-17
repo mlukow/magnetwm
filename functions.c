@@ -109,17 +109,17 @@ function_menu_exec(state_t *state, void *context, long flag)
 			}
 
 			if (access(tpath, X_OK) == 0) {
-				menu_add(menu, strdup(dp->d_name), 1, path, None, None);
+				menu_add(menu, dp, 1, dp->d_name, None, None);
 			}
 		}
 
 		closedir(dirp);
 	}
 
-	path = (char *)menu_filter(menu);
+	dp = (struct dirent *)menu_filter(menu);
 
-	if (path) {
-		xspawn(path);
+	if (dp) {
+		xspawn(dp->d_name);
 	}
 
 	menu_free(menu);

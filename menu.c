@@ -50,7 +50,7 @@ menu_add(menu_t *menu, void *context, Bool sorted, char *text, Pixmap icon, Pixm
 
 	item = malloc(sizeof(menu_item_t));
 	item->context = context;
-	item->text = text;
+	item->text = strdup(text);
 	item->icon = icon;
 	item->mask = mask;
 
@@ -694,12 +694,13 @@ menu_free(menu_t *menu)
 {
 	menu_item_t *item;
 
-	while ((item = TAILQ_FIRST(&menu->items)) != NULL) {
-		TAILQ_REMOVE(&menu->items, item, item);
-	}
-
 	while ((item = TAILQ_FIRST(&menu->results)) != NULL) {
 		TAILQ_REMOVE(&menu->results, item, result);
+	}
+
+	while ((item = TAILQ_FIRST(&menu->items)) != NULL) {
+		free(item->text);
+		TAILQ_REMOVE(&menu->items, item, item);
 	}
 
 	if (menu->prompt) {
