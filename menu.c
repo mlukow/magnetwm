@@ -26,7 +26,7 @@
 		ButtonMotionMask	|	\
 		StructureNotifyMask)
 
-int menu_calculate_entry(menu_t *, int, int);
+int menu_calculate_entry(menu_t *, int, int, Bool);
 void menu_draw_entry_horizontal(menu_t *, int, int);
 void menu_draw_entry_vertical(menu_t *, int, int);
 void menu_draw_horizontal(menu_t *);
@@ -73,10 +73,23 @@ menu_add(menu_t *menu, void *context, Bool sorted, char *text, Pixmap icon, Pixm
 }
 
 int
-menu_calculate_entry(menu_t *menu, int x, int y)
+menu_calculate_entry(menu_t *menu, int x, int y, Bool cycle)
 {
 	if ((x < menu->geometry.x) || (x > menu->geometry.x + menu->geometry.width)) {
 		return -1;
+	}
+
+	if ((y < menu->geometry.y) || (y > menu->geometry.y + menu->geometry.height)) {
+		return -1;
+	}
+
+	if (cycle) {
+		x -= menu->geometry.x + menu->border_width;
+		if ((x < 0) || (x > menu->geometry.width)) {
+			return -1;
+		}
+
+		return x / menu->geometry.height;
 	}
 
 	if ((y < menu->geometry.y + menu->offset + menu->padding) || (y >= menu->geometry.y + menu->geometry.height - menu->padding)) {
@@ -222,7 +235,7 @@ void
 menu_draw_entry_horizontal(menu_t *menu, int entry, Bool selected)
 {
 	double size;
-	int i, x, y;
+	int color, i, x, y;
 	menu_item_t *item = menu->visible;
 	Picture icon_picture, mask_picture;
 	unsigned int border_width, depth, height, width;
@@ -266,15 +279,14 @@ menu_draw_entry_horizontal(menu_t *menu, int entry, Bool selected)
 			NULL);
 	XRenderSetPictureTransform(menu->state->display, mask_picture, &transform);
 
-	if (selected) {
-		XftDrawRect(
-				menu->draw,
-				&menu->state->colors[COLOR_MENU_SELECTION_BACKGROUND],
-				entry * menu->geometry.height + 2 * menu->padding,
-				2 * menu->padding,
-				menu->geometry.height - 4 * menu->padding,
-				menu->geometry.height - 4 * menu->padding);
-	}
+	color = selected ? COLOR_MENU_SELECTION_BACKGROUND : COLOR_MENU_BACKGROUND;
+	XftDrawRect(
+			menu->draw,
+			&menu->state->colors[color],
+			entry * menu->geometry.height + 2 * menu->padding,
+			2 * menu->padding,
+			menu->geometry.height - 4 * menu->padding,
+			menu->geometry.height - 4 * menu->padding);
 
 	XRenderComposite(
 			menu->state->display,
@@ -294,17 +306,16 @@ menu_draw_entry_horizontal(menu_t *menu, int entry, Bool selected)
 	XRenderFreePicture(menu->state->display, icon_picture);
 	XRenderFreePicture(menu->state->display, mask_picture);
 
-	if (selected) {
-		XftTextExtentsUtf8(menu->state->display, font, (const FcChar8 *)item->text, strlen(item->text), &extents);
-		XftDrawStringUtf8(
-				menu->draw,
-				&menu->state->colors[COLOR_MENU_SELECTION_FOREGROUND],
-				font,
-				entry * menu->geometry.height + (menu->geometry.height - extents.xOff) / 2,
-				menu->geometry.height - (2 * menu->padding - font->ascent) / 2,
-				(const FcChar8 *)item->text,
-				strlen(item->text));
-	}
+	color = selected ? COLOR_MENU_SELECTION_FOREGROUND : COLOR_MENU_FOREGROUND;
+	XftTextExtentsUtf8(menu->state->display, font, (const FcChar8 *)item->text, strlen(item->text), &extents);
+	XftDrawStringUtf8(
+			menu->draw,
+			&menu->state->colors[color],
+			font,
+			entry * menu->geometry.height + (menu->geometry.height - extents.xOff) / 2,
+			menu->geometry.height - (2 * menu->padding - font->ascent) / 2,
+			(const FcChar8 *)item->text,
+			strlen(item->text));
 }
 
 void
@@ -806,7 +817,7 @@ void
 menu_handle_move(menu_t *menu, int x, int y, Bool cycle)
 {
 	menu->selected_previous = menu->selected_visible;
-	menu->selected_visible = menu_calculate_entry(menu, x, y);
+	menu->selected_visible = menu_calculate_entry(menu, x, y, cycle);
 
 	if (menu->selected_visible == menu->selected_previous) {
 		return;
