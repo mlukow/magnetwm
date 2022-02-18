@@ -3,6 +3,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <X11/XKBlib.h>
+
 #include "client.h"
 #include "config.h"
 #include "desktop.h"
@@ -162,6 +164,16 @@ function_window_center(struct state_t *state, void *context, long flag)
 	client->geometry.y = (screen->geometry.height - client->geometry.height) / 2 - client->border_width;
 
 	client_move_resize(state, client, False);
+}
+
+void
+function_window_cycle(struct state_t *state, void *context, long flag)
+{
+	client_t *client = (client_t *)context;
+
+	client = (flag == 0) ? client_next(client) : client_previous(client);
+	client_raise(state, client);
+	client_activate(state, client);
 }
 
 void

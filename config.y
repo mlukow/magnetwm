@@ -64,11 +64,10 @@ static const struct {
 	{ FUNC_SC(group-cycle, group_cycle, 0) },
 	{ FUNC_SC(menu-exec, menu_exec, 0) },
 	{ FUNC_SC(menu-command, menu_command, 0) },
-	{ "terminal", function_terminal, BINDING_CONTEXT_GLOBAL, 0 },
+	{ FUNC_GC(terminal, terminal, 0) },
 	{ FUNC_CC(window-center, window_center, 0) },
-	/*
-	{ "window-cycle", function_window_cycle, 0 },
-	*/
+	{ FUNC_CC(window-cycle, window_cycle, 0) },
+	{ FUNC_CC(window-rcycle, window_cycle, 1) },
 	{ FUNC_CC(window-tile-up, window_tile, 1) },
 	{ FUNC_CC(window-tile-up-right, window_tile, 9) },
 	{ FUNC_CC(window-tile-right, window_tile, 8) },

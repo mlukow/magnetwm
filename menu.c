@@ -104,7 +104,8 @@ menu_calculate_entry(menu_t *menu, int x, int y, Bool cycle)
 void *
 menu_cycle(menu_t *menu)
 {
-	int focusrevert, i = 0, processing = 1;
+	Bool processing = True;
+	int focusrevert, i = 0;
 	menu_item_t *item;
 	Window focus;
 	XEvent event;
@@ -175,13 +176,13 @@ menu_cycle(menu_t *menu)
 				if (i == 1) {
 					menu_draw_horizontal(menu);
 				} else if ((i == -1) || ((i == 2) && (menu->count > 0))) {
-					processing = 0;
+					processing = False;
 				}
 
 				break;
 			case KeyRelease:
 				if ((event.xkey.keycode == 0x40) && (event.xkey.state & Mod1Mask)) {
-					processing = 0;
+					processing = False;
 				}
 
 				break;
@@ -206,7 +207,7 @@ menu_cycle(menu_t *menu)
 			case ButtonRelease:
 				if (event.xbutton.button == Button1) {
 					i = menu_handle_release(menu, event.xbutton.x_root, event.xbutton.y_root);
-					processing = 0;
+					processing = False;
 				}
 
 				break;
@@ -495,7 +496,8 @@ menu_draw_vertical(menu_t *menu)
 void *
 menu_filter(menu_t *menu)
 {
-	int focusrevert, i = 0, processing = 1;
+	Bool processing = True;
+	int focusrevert, i;
 	menu_item_t *item;
 	Window focus;
 	XEvent event;
@@ -550,7 +552,7 @@ menu_filter(menu_t *menu)
 				if (i == 1) {
 					menu_draw_vertical(menu);
 				} else if ((i == -1) || ((i == 2) && (menu->count > 0))) {
-					processing = 0;
+					processing = False;
 				}
 
 				break;
@@ -575,7 +577,7 @@ menu_filter(menu_t *menu)
 			case ButtonRelease:
 				if (event.xbutton.button == Button1) {
 					i = menu_handle_release(menu, event.xbutton.x_root, event.xbutton.y_root);
-					processing = 0;
+					processing = False;
 				}
 
 				break;

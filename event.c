@@ -43,6 +43,8 @@ event_handle_button_press(state_t *state, XButtonPressedEvent *event)
 		}
 	}
 
+	event->state &= ~(LockMask | Mod2Mask | 0x2000);
+
 	TAILQ_FOREACH(binding, &state->config->mousebindings, entry) {
 		if ((event->state == binding->modifier) && (binding->button == event->button)) {
 			if ((binding->context == BINDING_CONTEXT_CLIENT) && client) {
@@ -291,6 +293,8 @@ event_handle_key_press(state_t *state, XKeyEvent *event)
 	} else {
 		screen = screen_find_active(state);
 	}
+
+	event->state &= ~(LockMask | Mod2Mask | 0x2000);
 
 	keysym = XkbKeycodeToKeysym(state->display, event->keycode, 0, 0);
 

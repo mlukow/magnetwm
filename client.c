@@ -276,6 +276,32 @@ client_move_resize(state_t *state, client_t *client, Bool reset)
 	client_configure(state, client);
 }
 
+client_t *
+client_next(client_t *client)
+{
+	client_t *next;
+
+	next = TAILQ_NEXT(client, entry);
+	if (!next) {
+		next = TAILQ_FIRST(&client->group->clients);
+	}
+
+	return next;
+}
+
+client_t *
+client_previous(client_t *client)
+{
+	client_t *previous;
+
+	previous = TAILQ_PREV(client, client_q, entry);
+	if (!previous) {
+		previous = TAILQ_LAST(&client->group->clients, client_q);
+	}
+
+	return previous;
+}
+
 void
 client_raise(state_t *state, client_t *client)
 {

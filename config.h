@@ -37,7 +37,7 @@ typedef struct binding_t {
 	TAILQ_ENTRY(binding_t) entry;
 
 	unsigned int modifier;
-	int button;
+	long button;
 	long flag;
 	binding_context_t context;
 	void (*function)(struct state_t *, void *, long);
