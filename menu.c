@@ -27,16 +27,16 @@
 		StructureNotifyMask)
 
 int menu_calculate_entry(menu_t *, int, int, Bool);
-void menu_draw_entry_horizontal(menu_t *, int, int);
-void menu_draw_entry_vertical(menu_t *, int, int);
 void menu_draw_horizontal(menu_t *);
+void menu_draw_selection_horizontal(menu_t *, int);
+void menu_draw_selection_vertical(menu_t *, int);
 void menu_draw_vertical(menu_t *);
 int menu_filter_add(menu_t *, char *);
 int menu_filter_complete(menu_t *);
 int menu_filter_delete(menu_t *);
 void menu_filter_update(menu_t *);
 int menu_handle_key(menu_t *, XKeyEvent *, Bool);
-void menu_handle_move(menu_t *, int, int, Bool);
+Bool menu_handle_move(menu_t *, int, int, Bool);
 int menu_handle_release(menu_t *, int, int);
 int menu_move_down(menu_t *);
 int menu_move_left(menu_t *);
@@ -189,7 +189,9 @@ menu_cycle(menu_t *menu)
 				menu_draw_horizontal(menu);
 				break;
 			case MotionNotify:
-				menu_handle_move(menu, event.xbutton.x_root, event.xbutton.y_root, True);
+				if (menu_handle_move(menu, event.xbutton.x_root, event.xbutton.y_root, True)) {
+					menu_draw_horizontal(menu);
+				}
 				break;
 			case ButtonPress:
 				if (event.xbutton.button == Button4) {
@@ -229,130 +231,6 @@ menu_cycle(menu_t *menu)
 	}
 
 	return (item == NULL) ? NULL : item->context;
-}
-
-void
-menu_draw_entry_horizontal(menu_t *menu, int entry, Bool selected)
-{
-	double size;
-	int color, i, x, y;
-	menu_item_t *item = menu->visible;
-	Picture icon_picture, mask_picture;
-	unsigned int border_width, depth, height, width;
-	Window root;
-	XftFont *font;
-	XGlyphInfo extents;
-	XTransform transform;
-
-	for (i = 0; i < entry; i++) {
-		item = TAILQ_NEXT(item, result);
-	}
-
-	if (!item) {
-		return;
-	}
-
-	size = 0.5 * menu->geometry.height;
-
-	memset(&transform, 0, sizeof(XTransform));
-	transform.matrix[2][2] = XDoubleToFixed(1);
-
-	font = menu->state->fonts[FONT_MENU_ITEM];
-
-	XGetGeometry(menu->state->display, item->icon, &root, &x, &y, &width, &height, &border_width, &depth);
-	transform.matrix[0][0] = XDoubleToFixed((double)width / size);
-	transform.matrix[1][1] = XDoubleToFixed((double)height / size);
-
-	icon_picture = XRenderCreatePicture(
-			menu->state->display,
-			item->icon,
-			XRenderFindVisualFormat(menu->state->display, menu->state->visual),
-			0,
-			NULL);
-	XRenderSetPictureTransform(menu->state->display, icon_picture, &transform);
-
-	mask_picture = XRenderCreatePicture(
-			menu->state->display,
-			item->mask,
-			XRenderFindStandardFormat(menu->state->display, PictStandardA1),
-			0,
-			NULL);
-	XRenderSetPictureTransform(menu->state->display, mask_picture, &transform);
-
-	color = selected ? COLOR_MENU_SELECTION_BACKGROUND : COLOR_MENU_BACKGROUND;
-	XftDrawRect(
-			menu->draw,
-			&menu->state->colors[color],
-			entry * menu->geometry.height + 2 * menu->padding,
-			2 * menu->padding,
-			menu->geometry.height - 4 * menu->padding,
-			menu->geometry.height - 4 * menu->padding);
-
-	XRenderComposite(
-			menu->state->display,
-			PictOpOver,
-			icon_picture,
-			mask_picture,
-			menu->window_picture,
-			x,
-			y,
-			x,
-			y,
-			MAX(entry * menu->geometry.height + (menu->geometry.height - size) / 2, 0),
-			(menu->geometry.height - size) / 2,
-			size,
-			size);
-
-	XRenderFreePicture(menu->state->display, icon_picture);
-	XRenderFreePicture(menu->state->display, mask_picture);
-
-	color = selected ? COLOR_MENU_SELECTION_FOREGROUND : COLOR_MENU_FOREGROUND;
-	XftTextExtentsUtf8(menu->state->display, font, (const FcChar8 *)item->text, strlen(item->text), &extents);
-	XftDrawStringUtf8(
-			menu->draw,
-			&menu->state->colors[color],
-			font,
-			entry * menu->geometry.height + (menu->geometry.height - extents.xOff) / 2,
-			menu->geometry.height - (2 * menu->padding - font->ascent) / 2,
-			(const FcChar8 *)item->text,
-			strlen(item->text));
-}
-
-void
-menu_draw_entry_vertical(menu_t *menu, int entry, Bool selected)
-{
-	int color, i;
-	menu_item_t *item = menu->visible;
-	XftFont *font;
-
-	for (i = 0; i < entry; i++) {
-		item = TAILQ_NEXT(item, result);
-	}
-
-	if (!item) {
-		return;
-	}
-
-	font = menu->state->fonts[FONT_MENU_ITEM];
-
-	color = selected ? COLOR_MENU_SELECTION_BACKGROUND : COLOR_MENU_BACKGROUND;
-	XftDrawRect(
-			menu->draw,
-			&menu->state->colors[color],
-			0,
-			menu->offset + menu->padding + entry * (font->height + 1),
-			menu->geometry.width,
-			font->height + 1);
-
-	color = selected ? COLOR_MENU_SELECTION_FOREGROUND : COLOR_MENU_FOREGROUND;
-	XftDrawStringUtf8(
-			menu->draw,
-			&menu->state->colors[color],
-			font,
-			menu->padding,
-			menu->offset + menu->padding + entry * (font->height + 1) + font->ascent + 1,
-			(const FcChar8 *)item->text,
-			strlen(item->text));
 }
 
 void
@@ -418,8 +296,128 @@ menu_draw_horizontal(menu_t *menu)
 	}
 
 	if (i > 0) {
-		menu_draw_entry_horizontal(menu, menu->selected_visible, True);
+		menu_draw_selection_horizontal(menu, menu->selected_visible);
 	}
+}
+
+void
+menu_draw_selection_horizontal(menu_t *menu, int entry)
+{
+	double size;
+	int i, x, y;
+	menu_item_t *item = menu->visible;
+	Picture icon_picture, mask_picture;
+	unsigned int border_width, depth, height, width;
+	Window root;
+	XftFont *font;
+	XGlyphInfo extents;
+	XTransform transform;
+
+	for (i = 0; i < entry; i++) {
+		item = TAILQ_NEXT(item, result);
+	}
+
+	if (!item) {
+		return;
+	}
+
+	size = 0.5 * menu->geometry.height;
+
+	memset(&transform, 0, sizeof(XTransform));
+	transform.matrix[2][2] = XDoubleToFixed(1);
+
+	font = menu->state->fonts[FONT_MENU_ITEM];
+
+	XGetGeometry(menu->state->display, item->icon, &root, &x, &y, &width, &height, &border_width, &depth);
+	transform.matrix[0][0] = XDoubleToFixed((double)width / size);
+	transform.matrix[1][1] = XDoubleToFixed((double)height / size);
+
+	icon_picture = XRenderCreatePicture(
+			menu->state->display,
+			item->icon,
+			XRenderFindVisualFormat(menu->state->display, menu->state->visual),
+			0,
+			NULL);
+	XRenderSetPictureTransform(menu->state->display, icon_picture, &transform);
+
+	mask_picture = XRenderCreatePicture(
+			menu->state->display,
+			item->mask,
+			XRenderFindStandardFormat(menu->state->display, PictStandardA1),
+			0,
+			NULL);
+	XRenderSetPictureTransform(menu->state->display, mask_picture, &transform);
+
+	XftDrawRect(
+			menu->draw,
+			&menu->state->colors[COLOR_MENU_SELECTION_BACKGROUND],
+			entry * menu->geometry.height + 2 * menu->padding,
+			2 * menu->padding,
+			menu->geometry.height - 4 * menu->padding,
+			menu->geometry.height - 4 * menu->padding);
+
+	XRenderComposite(
+			menu->state->display,
+			PictOpOver,
+			icon_picture,
+			mask_picture,
+			menu->window_picture,
+			x,
+			y,
+			x,
+			y,
+			MAX(entry * menu->geometry.height + (menu->geometry.height - size) / 2, 0),
+			(menu->geometry.height - size) / 2,
+			size,
+			size);
+
+	XRenderFreePicture(menu->state->display, icon_picture);
+	XRenderFreePicture(menu->state->display, mask_picture);
+
+	XftTextExtentsUtf8(menu->state->display, font, (const FcChar8 *)item->text, strlen(item->text), &extents);
+	XftDrawStringUtf8(
+			menu->draw,
+			&menu->state->colors[COLOR_MENU_SELECTION_FOREGROUND],
+			font,
+			entry * menu->geometry.height + (menu->geometry.height - extents.xOff) / 2,
+			menu->geometry.height - (2 * menu->padding - font->ascent) / 2,
+			(const FcChar8 *)item->text,
+			strlen(item->text));
+}
+
+void
+menu_draw_selection_vertical(menu_t *menu, int entry)
+{
+	int i;
+	menu_item_t *item = menu->visible;
+	XftFont *font;
+
+	for (i = 0; i < entry; i++) {
+		item = TAILQ_NEXT(item, result);
+	}
+
+	if (!item) {
+		return;
+	}
+
+	font = menu->state->fonts[FONT_MENU_ITEM];
+
+	XftDrawRect(
+			menu->draw,
+			&menu->state->colors[COLOR_MENU_SELECTION_BACKGROUND],
+			0,
+			menu->offset + menu->padding + entry * (font->height + 1),
+			menu->geometry.width,
+			font->height + 1);
+
+	XftDrawStringUtf8(
+			menu->draw,
+			&menu->state->colors[COLOR_MENU_SELECTION_FOREGROUND],
+			font,
+			menu->padding,
+			menu->offset + menu->padding + entry * (font->height + 1) + font->ascent + 1,
+			(const FcChar8 *)item->text,
+			strlen(item->text));
 }
 
 void
@@ -490,7 +488,7 @@ menu_draw_vertical(menu_t *menu)
 	}
 
 	if (i > 0) {
-		menu_draw_entry_vertical(menu, menu->selected_visible, True);
+		menu_draw_selection_vertical(menu, menu->selected_visible);
 	}
 }
 
@@ -560,7 +558,9 @@ menu_filter(menu_t *menu)
 				menu_draw_vertical(menu);
 				break;
 			case MotionNotify:
-				menu_handle_move(menu, event.xbutton.x_root, event.xbutton.y_root, False);
+				if (menu_handle_move(menu, event.xbutton.x_root, event.xbutton.y_root, False)) {
+					menu_draw_vertical(menu);
+				}
 				break;
 			case ButtonPress:
 				if (event.xbutton.button == Button4) {
@@ -813,35 +813,28 @@ menu_handle_key(menu_t *menu, XKeyEvent *event, Bool cycle)
 	return menu_filter_add(menu, c);
 }
 
-void
+Bool
 menu_handle_move(menu_t *menu, int x, int y, Bool cycle)
 {
 	menu->selected_previous = menu->selected_visible;
 	menu->selected_visible = menu_calculate_entry(menu, x, y, cycle);
 
 	if (menu->selected_visible == menu->selected_previous) {
-		return;
+		return False;
 	}
 
 	if (menu->selected_visible == -1) {
 		menu->selected_visible = menu->selected_previous;
-		return;
-	}
-
-	if (menu->selected_previous != -1) {
-		menu->selected_item += menu->selected_visible - menu->selected_previous;
-		if (cycle) {
-			menu_draw_entry_horizontal(menu, menu->selected_previous, False);
-		} else {
-			menu_draw_entry_vertical(menu, menu->selected_previous, False);
-		}
+		return False;
 	}
 
 	if (cycle) {
-		menu_draw_entry_horizontal(menu, menu->selected_visible, True);
+		menu_draw_selection_horizontal(menu, menu->selected_visible);
 	} else {
-		menu_draw_entry_vertical(menu, menu->selected_visible, True);
+		menu_draw_selection_vertical(menu, menu->selected_visible);
 	}
+
+	return True;
 }
 
 int
