@@ -175,6 +175,22 @@ client_free(client_t *client)
 	free(client);
 }
 
+Atom *
+client_get_wm_state(state_t *state, client_t *client, int *count)
+{
+	Atom *wm_state;
+	unsigned char *output;
+	if ((*count = x_get_property(state->display, client->window, state->atoms[_NET_WM_STATE], XA_ATOM, 64L, &output)) <= 0) {
+		return NULL;
+	}
+
+	wm_state = calloc(*count, sizeof(Atom));
+	(void)memcpy(wm_state, output, *count * sizeof(Atom));
+	XFree(output);
+
+	return wm_state;
+}
+
 void
 client_hide(state_t *state, client_t *client)
 {
@@ -344,20 +360,15 @@ client_remove(state_t *state, client_t *client)
 	}
 }
 
-Atom *
-client_get_wm_state(state_t *state, client_t *client, int *count)
+void
+client_restore(state_t *state, client_t *client)
 {
-	Atom *wm_state;
-	unsigned char *output;
-	if ((*count = x_get_property(state->display, client->window, state->atoms[_NET_WM_STATE], XA_ATOM, 64L, &output)) <= 0) {
-		return NULL;
+	if ((client->geometry_saved.width > 0) && (client->geometry_saved.height > 0)) {
+		client->geometry = client->geometry_saved;
+
+		client_move_resize(state, client, False);
+		client_set_net_wm_state(state, client);
 	}
-
-	wm_state = calloc(*count, sizeof(Atom));
-	(void)memcpy(wm_state, output, *count * sizeof(Atom));
-	XFree(output);
-
-	return wm_state;
 }
 
 void
@@ -522,14 +533,23 @@ client_toggle_freeze(state_t *state, client_t *client)
 void
 client_toggle_fullscreen(state_t *state, client_t *client)
 {
-	screen_t *screen;
-
-	if (client->flags & CLIENT_FREEZE) {
+	if ((client->flags & CLIENT_FREEZE) && !(client->flags & CLIENT_FULLSCREEN)) {
 		return;
 	}
 
-	screen = screen_for_client(state, client);
-	client->geometry = screen->geometry;
+	if (client->flags & CLIENT_FULLSCREEN) {
+		if (!(client->flags & CLIENT_IGNORE)) {
+			client->border_width = state->config->border_width;
+		}
+
+		client->geometry = client->geometry_saved;
+		client->flags &= ~(CLIENT_FULLSCREEN | CLIENT_FREEZE);
+	} else {
+		client->geometry_saved = client->geometry;
+		client->border_width = 0;
+		client->geometry = client->group->desktop->screen->geometry;
+		client->flags |= (CLIENT_FULLSCREEN | CLIENT_FREEZE);
+	}
 
 	client_move_resize(state, client, False);
 	client_set_net_wm_state(state, client);
@@ -551,9 +571,38 @@ client_toggle_hmaximize(state_t *state, client_t *client)
 		return;
 	}
 
-	screen = screen_for_client(state, client);
+	screen = client->group->desktop->screen;
 	client->geometry.x = screen->geometry.x;
 	client->geometry.width = screen->geometry.width - 2 * client->border_width;
+
+	client_move_resize(state, client, False);
+	client_set_net_wm_state(state, client);
+}
+
+void
+client_toggle_maximize(state_t *state, client_t *client)
+{
+	screen_t *screen;
+
+	if (client->flags & CLIENT_FREEZE) {
+		return;
+	}
+
+	screen = client->group->desktop->screen;
+
+	if ((client->flags & CLIENT_MAXFLAGS) == CLIENT_MAXIMIZED) {
+		client->geometry = client->geometry_saved;
+		client->flags &= ~CLIENT_MAXIMIZED;
+	} else {
+		client->geometry_saved = client->geometry;
+
+		client->geometry.x = screen->geometry.x;
+		client->geometry.y = screen->geometry.y;
+		client->geometry.width = screen->geometry.width - 2 * client->border_width;
+		client->geometry.height = screen->geometry.height - 2 * client->border_width;
+
+		client->flags |= CLIENT_MAXIMIZED;
+	}
 
 	client_move_resize(state, client, False);
 	client_set_net_wm_state(state, client);
@@ -597,7 +646,7 @@ client_toggle_vmaximize(state_t *state, client_t *client)
 		return;
 	}
 
-	screen = screen_for_client(state, client);
+	screen = client->group->desktop->screen;
 	client->geometry.y = screen->geometry.y;
 	client->geometry.width = screen->geometry.height - 2 * client->border_width;
 

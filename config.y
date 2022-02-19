@@ -56,17 +56,14 @@ static const struct {
 #define FUNC_CC(t, h, n) #t, function_ ## h, BINDING_CONTEXT_CLIENT, n
 #define FUNC_SC(t, h, n) #t, function_ ## h, BINDING_CONTEXT_SCREEN, n
 #define FUNC_GC(t, h, n) #t, function_ ## h, BINDING_CONTEXT_GLOBAL, n
-/*
-	{ "group-cycle", function_group_cycle, 0 },
-	{ "group-rcycle", function_group_cycle, 1 },
-	{ "firefox", function_firefox, 0 },
-	*/
 	{ FUNC_SC(group-cycle, group_cycle, 0) },
 	{ FUNC_SC(menu-exec, menu_exec, 0) },
 	{ FUNC_SC(menu-command, menu_command, 0) },
 	{ FUNC_GC(terminal, terminal, 0) },
 	{ FUNC_CC(window-center, window_center, 0) },
 	{ FUNC_CC(window-cycle, window_cycle, 0) },
+	{ FUNC_CC(window-fullscreen, window_fullscreen, 0) },
+	{ FUNC_CC(window-maximize, window_maximize, 0) },
 	{ FUNC_CC(window-rcycle, window_cycle, 1) },
 	{ FUNC_CC(window-tile-up, window_tile, 1) },
 	{ FUNC_CC(window-tile-up-right, window_tile, 9) },
@@ -78,6 +75,7 @@ static const struct {
 	{ FUNC_CC(window-tile-up-left, window_tile, 5) },
 	{ FUNC_CC(window-move, window_move, 0) },
 	{ FUNC_CC(window-resize, window_resize, 0) },
+	{ FUNC_CC(window-restore, window_restore, 0) },
 };
 
 TAILQ_HEAD(files, file_t) files = TAILQ_HEAD_INITIALIZER(files);

@@ -177,6 +177,22 @@ function_window_cycle(struct state_t *state, void *context, long flag)
 }
 
 void
+function_window_fullscreen(struct state_t *state, void *context, long flag)
+{
+	client_t *client = (client_t *)context;
+
+	client_toggle_fullscreen(state, client);
+}
+
+void
+function_window_maximize(struct state_t *state, void *context, long flag)
+{
+	client_t *client = (client_t *)context;
+
+	client_toggle_maximize(state, client);
+}
+
+void
 function_window_move(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
@@ -201,6 +217,8 @@ function_window_move(struct state_t *state, void *context, long flag)
 	if (result != GrabSuccess) {
 		return;
 	}
+
+	client->geometry_saved = client->geometry;
 
 	while (move) {
 		XMaskEvent(state->display, ButtonPressMask | ButtonReleaseMask | PointerMotionMask, &event);
@@ -272,6 +290,8 @@ function_window_resize(struct state_t *state, void *context, long flag)
 		return;
 	}
 
+	client->geometry_saved = client->geometry;
+
 	while (resize) {
 		XMaskEvent(state->display, ButtonPressMask | ButtonReleaseMask | PointerMotionMask, &event);
 		switch (event.type) {
@@ -313,12 +333,22 @@ function_window_resize(struct state_t *state, void *context, long flag)
 }
 
 void
+function_window_restore(state_t *state, void *context, long flag)
+{
+	client_t *client = (client_t *)context;
+
+	client_restore(state, client);
+}
+
+void
 function_window_tile(state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
 	screen_t *screen;
 
 	screen = screen_for_client(state, client);
+
+	client->geometry_saved = client->geometry;
 
 	if (flag & UP) {
 		client->geometry.y = 0;

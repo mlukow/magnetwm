@@ -62,7 +62,9 @@ typedef struct client_t {
 	long flags;
 	long initial_state;
 	unsigned int border_width;
+
 	geometry_t geometry;
+	geometry_t geometry_saved;
 } client_t;
 
 void client_activate(struct state_t *, client_t *);
@@ -80,11 +82,13 @@ client_t *client_next(client_t *);
 client_t *client_previous(client_t *);
 void client_raise(struct state_t *, client_t *);
 void client_remove(struct state_t *, client_t *);
+void client_restore(struct state_t *, client_t *);
 void client_show(struct state_t *, client_t *);
 void client_toggle_freeze(struct state_t *, client_t *);
 void client_toggle_fullscreen(struct state_t *, client_t *);
 void client_toggle_hidden(struct state_t *, client_t *);
 void client_toggle_hmaximize(struct state_t *, client_t *);
+void client_toggle_maximize(struct state_t *, client_t *);
 void client_toggle_skip_pager(struct state_t *, client_t *);
 void client_toggle_skip_taskbar(struct state_t *, client_t *);
 void client_toggle_sticky(struct state_t *, client_t *);
