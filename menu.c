@@ -897,8 +897,8 @@ menu_init(state_t *state, screen_t *screen, char *prompt)
 	menu->border_width = state->config->border_width;
 
 	hint = XAllocClassHint();
-	hint->res_name = strdup("torwm");
-	hint->res_class = strdup("torwm");
+	hint->res_name = strdup("magnetwm");
+	hint->res_class = strdup("magnetwm");
 	XSetClassHint(state->display, menu->window, hint);
 	XFree(hint);
 

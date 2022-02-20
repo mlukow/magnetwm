@@ -63,7 +63,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	xasprintf(&file, "%s/%s", home, ".torwmrc");
+	xasprintf(&file, "%s/%s", home, ".magnetwmrc");
 
     state = state_init(NULL, file);
     if (!state) {

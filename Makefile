@@ -1,4 +1,4 @@
-PROG=		torwm
+PROG=		magnetwm
 
 PREFIX?=	/usr/local
 

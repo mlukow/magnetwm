@@ -1,1 +1,1 @@
-# torwm
+# MagnetWM
