@@ -16,6 +16,7 @@
 #include "screen.h"
 #include "state.h"
 #include "utils.h"
+#include "xutils.h"
 
 #define UP 0x01
 #define DOWN 0x02
@@ -159,14 +160,23 @@ void
 function_window_center(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
+	geometry_t geometry;
 	screen_t *screen;
 
-	screen = screen_for_client(state, client);
+	screen = client->group->desktop->screen;
 
-	client->geometry.x =
-		screen->geometry.x + (screen->geometry.width - client->geometry.width) / 2 - client->border_width;
-	client->geometry.y =
-		screen->geometry.y + (screen->geometry.height - client->geometry.height) / 2 - client->border_width;
+	client->geometry_saved = client->geometry;
+
+	geometry.x = screen->geometry.x + (screen->geometry.width - client->geometry.width) / 2 - client->border_width;
+	geometry.y = screen->geometry.y + (screen->geometry.height - client->geometry.height) / 2 - client->border_width;
+	geometry.width = client->geometry.width;
+	geometry.height = client->geometry.height;
+
+	if (state->config->animate_transitions) {
+		x_animate(state->display, client->window, client->geometry_saved, geometry, state->config->animation_duration);
+	}
+
+	client->geometry = geometry;
 
 	client_move_resize(state, client, False);
 }
@@ -193,6 +203,31 @@ void
 function_window_maximize(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
+	geometry_t from, to;
+	screen_t *screen;
+
+	if (client->flags & CLIENT_FREEZE) {
+		return;
+	}
+
+	screen = client->group->desktop->screen;
+
+	if (state->config->animate_transitions) {
+		if ((client->flags & CLIENT_MAXFLAGS) == CLIENT_MAXIMIZED) {
+			from = client->geometry;
+			to = client->geometry_saved;
+		} else {
+			client->geometry_saved = client->geometry;
+
+			from = client->geometry;
+			to.x = screen->geometry.x;
+			to.y = screen->geometry.y;
+			to.width = screen->geometry.width - 2 * client->border_width;
+			to.height = screen->geometry.height - 2 * client->border_width;
+		}
+
+		x_animate(state->display, client->window, from, to, state->config->animation_duration);
+	}
 
 	client_toggle_maximize(state, client);
 }
@@ -341,6 +376,18 @@ void
 function_window_restore(state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
+	geometry_t geometry;
+	screen_t *screen;
+
+	if ((client->geometry_saved.width == 0) || (client->geometry_saved.height == 0)) {
+		return;
+	}
+
+	screen = client->group->desktop->screen;
+
+	if (state->config->animate_transitions) {
+		x_animate(state->display, client->window, client->geometry, client->geometry_saved, state->config->animation_duration);
+	}
 
 	client_restore(state, client);
 }
@@ -349,37 +396,42 @@ void
 function_window_tile(state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
+	geometry_t geometry;
 	screen_t *screen;
 
-	screen = screen_for_client(state, client);
+	screen = client->group->desktop->screen;
 
 	client->geometry_saved = client->geometry;
 
 	if (flag & UP) {
-		client->geometry.y = screen->geometry.y;
-		client->geometry.height = screen->geometry.height / 2 - 2 * client->border_width;
+		geometry.y = screen->geometry.y;
+		geometry.height = screen->geometry.height / 2 - 2 * client->border_width;
 	} else if (flag & DOWN) {
-		client->geometry.y = screen->geometry.y + screen->geometry.height / 2;
-		client->geometry.height = screen->geometry.height / 2 - 2 * client->border_width;
+		geometry.y = screen->geometry.y + screen->geometry.height / 2;
+		geometry.height = screen->geometry.height / 2 - 2 * client->border_width;
 	} else {
-		client->geometry.y = screen->geometry.y;
-		client->geometry.height = screen->geometry.height - 2 * client->border_width;
+		geometry.y = screen->geometry.y;
+		geometry.height = screen->geometry.height - 2 * client->border_width;
 	}
 
 	if (flag & LEFT) {
-		client->geometry.x = screen->geometry.x;
-		client->geometry.width = screen->geometry.width / 2 - 2 * client->border_width;
+		geometry.x = screen->geometry.x;
+		geometry.width = screen->geometry.width / 2 - 2 * client->border_width;
 	} else if (flag & RIGHT) {
-		client->geometry.x = screen->geometry.x + screen->geometry.width / 2;
-		client->geometry.width = screen->geometry.width / 2 - 2 * client->border_width;
+		geometry.x = screen->geometry.x + screen->geometry.width / 2;
+		geometry.width = screen->geometry.width / 2 - 2 * client->border_width;
 	} else {
-		client->geometry.x = screen->geometry.x;
-		client->geometry.width = screen->geometry.width - 2 * client->border_width;
+		geometry.x = screen->geometry.x;
+		geometry.width = screen->geometry.width - 2 * client->border_width;
 	}
 
+	if (state->config->animate_transitions) {
+		x_animate(state->display, client->window, client->geometry_saved, geometry, state->config->animation_duration);
+	}
+
+	client->geometry = geometry;
 	client_move_resize(state, client, False);
 }
-
 
 void
 function_wm_state(state_t *state, void *context, long flag)

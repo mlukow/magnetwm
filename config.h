@@ -1,6 +1,8 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#include <X11/Xlib.h>
+
 #include "queue.h"
 
 struct state_t;
@@ -58,6 +60,8 @@ typedef struct config_t {
 	char *colors[COLOR_NITEMS];
 	char *fonts[FONT_NITEMS];
 
+	Bool animate_transitions;
+	double animation_duration;
 	int border_width;
 } config_t;
 

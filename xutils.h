@@ -78,6 +78,7 @@ typedef struct geometry_t {
 	unsigned int height;
 } geometry_t;
 
+void x_animate(Display *, Window, geometry_t, geometry_t, double);
 Bool x_contains_point(geometry_t, int, int);
 int x_distance(geometry_t, int, int);
 Bool x_get_pointer(Display *, Window, int *, int *);

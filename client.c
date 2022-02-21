@@ -364,6 +364,9 @@ void
 client_restore(state_t *state, client_t *client)
 {
 	if ((client->geometry_saved.width > 0) && (client->geometry_saved.height > 0)) {
+		client->flags &= ~CLIENT_HMAXIMIZED;
+		client->flags &= ~CLIENT_VMAXIMIZED;
+
 		client->geometry = client->geometry_saved;
 
 		client_move_resize(state, client, False);
@@ -452,7 +455,7 @@ client_set_net_wm_state(state_t *state, client_t *client)
 		output[j++] = state->atoms[_NET_WM_STATE_HIDDEN];
 	}
 
-	if (client->flags & CLIENT_FULLSCREEN) {
+	if (client->flags & CLIENT_MAXIMIZED) {
 		output[j++] = state->atoms[_NET_WM_STATE_FULLSCREEN];
 	} else if (client->flags & CLIENT_VMAXIMIZED) {
 		output[j++] = state->atoms[_NET_WM_STATE_MAXIMIZED_VERT];

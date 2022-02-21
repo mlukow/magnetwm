@@ -95,8 +95,9 @@ main(int argc, char **argv)
 
     state_free(state);
 
-    if (wm_state == RESTART)
-        xexec("poppywm");
+    if (wm_state == RESTART) {
+        xexec("magnetwm");
+	}
 
     return EXIT_SUCCESS;
 }

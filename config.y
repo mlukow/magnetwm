@@ -115,6 +115,7 @@ static config_t *config;
 
 %}
 
+%token ANIMATETRANSITIONS ANIMATIONDURATION
 %token BINDKEY
 %token BINDMOUSE
 %token BORDERACTIVE
@@ -222,7 +223,13 @@ string	: string STRING {
 yesno	: YES	{ $$ = 1; }
 		| NO	{ $$ = 0; }
 
-main	: BINDKEY STRING string {
+main	: ANIMATETRANSITIONS yesno {
+			config->animate_transitions = $2;
+		}
+		| ANIMATIONDURATION NUMBER {
+			config->animation_duration = (double)$2 / 1000.0;
+		}
+		| BINDKEY STRING string {
 			 if (!config_bind_key(config, $2, $3)) {
 				 yyerror("invalid bind-key: %s %s", $2, $3);
 				 free($2);
@@ -338,6 +345,8 @@ int
 lookup(char *s)
 {
 	static const keywords_t keywords[] = {
+		{ "animate-transitions", ANIMATETRANSITIONS },
+		{ "animation-duration", ANIMATIONDURATION },
 		{ "bind-key", BINDKEY },
 		{ "bind-mouse", BINDMOUSE },
 		{ "border-active", BORDERACTIVE },
@@ -703,6 +712,8 @@ config_init(char *path)
 	config->fonts[FONT_MENU_INPUT] = strdup("sans-serif:pixelsize=14:bold");
 	config->fonts[FONT_MENU_ITEM] = strdup("sans-serif:pixelsize=14:bold");
 
+	config->animate_transitions = False;
+	config->animation_duration = 0.1;
 	config->border_width = 1;
 
 	TAILQ_INIT(&config->commands);
