@@ -1,0 +1,161 @@
+commit d22e0181f6d8a7f1abfc3e92f94fbd12c9d41f03
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Mon Feb 21 22:32:09 2022 +0100
+
+    Added animations
+
+commit 6a23eaf6f79bd19017d75d496e2c2c5f19c3bcce
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Mon Feb 21 17:38:44 2022 +0100
+
+    Cleaned up build warnings
+
+commit aa1625a538b48244e101ef9846f6b8fd498266a9
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Mon Feb 21 11:44:01 2022 +0100
+
+    Added rudimentary README file
+
+commit 8d7b15a61f4c615bd6d0d3b9a84539476feae6ee
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Mon Feb 21 11:24:24 2022 +0100
+
+    Fixed colors, added example config
+
+commit a7df07562c332fc1f697962e56a6568d39d6566a
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Mon Feb 21 11:09:10 2022 +0100
+
+    Added wm_state function
+
+commit 1e62eb8de054333c651e68e4024848bc39682dad
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Mon Feb 21 11:01:13 2022 +0100
+
+    Multihead fixes
+
+commit 0d63fa138bf97c40f590104c677560dfe09cac00
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Sun Feb 20 22:13:17 2022 +0100
+
+    Generated configure script
+
+commit a06249dff5e76c0d8054a718a4b68a67ed5fa491
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Sun Feb 20 22:11:34 2022 +0100
+
+    Added basic autotool support
+
+commit c97867e36e49c44c806f09fd4936ed36b733741c
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Sun Feb 20 10:41:19 2022 +0100
+
+    Renamed to MagnetWM
+
+commit 62f4aef63999c2a268661f23bf182250a654d5da
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Sat Feb 19 16:18:52 2022 +0100
+
+    Added geometry saving
+
+commit b73c3adadee5263247d17fb61975afa6a74c6c6b
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Fri Feb 18 23:28:40 2022 +0100
+
+    Added window cycling withing a group
+
+commit c540b1fb0de00cad7a11a00558135eb6b3e8a495
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Fri Feb 18 11:25:35 2022 +0100
+
+    Optimized menu selection performance
+
+commit 4f2f587b845aa461049361675e4d342a82628fc1
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Fri Feb 18 11:05:42 2022 +0100
+
+    Fixed mouse navigation in menu cycling
+
+commit d10d12857bc9cbf3cd7759006cfb4fa6cf92e0c9
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Thu Feb 17 23:06:35 2022 +0100
+
+    Functional group switching
+
+commit 7079e954901448046de7b60e0d7c2a757302bc51
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Thu Feb 17 22:22:37 2022 +0100
+
+    Cleaned menu item text
+
+commit 65f9e18e2738ae04df8995b7a86e4a8c03682369
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Thu Feb 17 22:17:24 2022 +0100
+
+    Cleaned menu icons
+
+commit 4388a5a403716d7a176fb9e871432ac9bbd22db1
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Thu Feb 17 21:52:35 2022 +0100
+
+    Added client message handler
+
+commit e7c83757527b2371d71c984ec7029bca76993a54
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Thu Feb 17 21:15:47 2022 +0100
+
+    Restructured menus
+
+commit d774b311d678057ff00188dee9c76ccdd543f8d0
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Wed Feb 16 23:15:38 2022 +0100
+
+    Fixed client init, prepared for group cycle
+
+commit 9ec2c0a41c3363c0a47cb1ebfa19f7603efa915e
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Wed Feb 16 21:17:48 2022 +0100
+
+    Fixed client name bug
+
+commit 9f59216ade8debae5a46b869f6909326284e2c7c
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Wed Feb 16 21:09:17 2022 +0100
+
+    Fixed client init bug
+
+commit c382f66ae9e613ece3848c50e10f4c34c249a438
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Wed Feb 16 20:30:33 2022 +0100
+
+    Added menu
+
+commit da67f27e626dadbe188b653792716b3203063dcf
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Fri Feb 11 19:32:42 2022 +0100
+
+    Added reverse entity bindings
+
+commit 6fe938a31680277992f051be5459451e7c5b4e88
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Thu Feb 10 23:18:51 2022 +0100
+
+    Added new functions, wm_state and net_wm_state
+
+commit 3565561df1066d42be66394d8b542910559a8767
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Wed Feb 9 22:58:31 2022 +0100
+
+    Cleaned up screen, client
+
+commit b39fa52a8f3810e399d54103753b99352d3cef5b
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Wed Feb 9 19:34:35 2022 +0100
+
+    Initial commit
+
+commit 0cbb5249856339337d699aa2507000d0ccf790cb
+Author: Marcin Lukow <82239121+mlukow@users.noreply.github.com>
+Date:   Wed Feb 9 19:33:09 2022 +0100
+
+    Initial commit
