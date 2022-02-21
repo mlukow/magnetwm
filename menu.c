@@ -516,8 +516,8 @@ menu_filter(menu_t *menu)
 		menu->offset = 2 * menu->padding + menu->state->fonts[FONT_MENU_INPUT]->height + 1;
 	}
 
-	menu->geometry.x = (menu->screen->geometry.width - menu->geometry.width) / 2;
-	menu->geometry.y = 0.2 * menu->screen->geometry.height;
+	menu->geometry.x = menu->screen->geometry.x + (menu->screen->geometry.width - menu->geometry.width) / 2;
+	menu->geometry.y = menu->screen->geometry.y + 0.2 * menu->screen->geometry.height;
 
 	menu->visible = TAILQ_FIRST(&menu->results);
 
@@ -777,21 +777,37 @@ menu_handle_key(menu_t *menu, XKeyEvent *event, Bool cycle)
 		case XK_ISO_Left_Tab:
 			return cycle ? menu_move_left(menu) : 0;
 		case XK_b:
-			return (cycle && (event->state & ControlMask)) ? menu_move_left(menu) : 0;
+			if (cycle && (event->state & ControlMask)) {
+				return menu_move_left(menu);
+			}
+
+			break;
 		case XK_Left:
 			return cycle ? menu_move_left(menu) : 0;
 		case XK_Up:
 			return cycle ? 0 : menu_move_up(menu);
 		case XK_p:
-			return (!cycle && (event->state & ControlMask)) ? menu_move_up(menu) : 0;
+			if (!cycle && (event->state & ControlMask)) {
+				return menu_move_up(menu);
+			}
+
+			break;
 		case XK_f:
-			return (cycle && (event->state & ControlMask)) ? menu_move_right(menu) : 0;
+			if (cycle && (event->state & ControlMask)) {
+				return menu_move_right(menu);
+			}
+
+			break;
 		case XK_Right:
 			return cycle ? menu_move_right(menu) : 0;
 		case XK_Down:
 			return cycle ? 0 : menu_move_down(menu);
 		case XK_n:
-			return (!cycle && (event->state & ControlMask)) ? menu_move_down(menu) : 0;
+			if (!cycle && (event->state & ControlMask)) {
+				return menu_move_down(menu);
+			}
+
+			break;
 		case XK_Escape:
 			if (menu->filter_length == 0) {
 				return -1;

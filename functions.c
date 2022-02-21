@@ -160,8 +160,10 @@ function_window_center(struct state_t *state, void *context, long flag)
 
 	screen = screen_for_client(state, client);
 
-	client->geometry.x = (screen->geometry.width - client->geometry.width) / 2 - client->border_width;
-	client->geometry.y = (screen->geometry.height - client->geometry.height) / 2 - client->border_width;
+	client->geometry.x =
+		screen->geometry.x + (screen->geometry.width - client->geometry.width) / 2 - client->border_width;
+	client->geometry.y =
+		screen->geometry.y + (screen->geometry.height - client->geometry.height) / 2 - client->border_width;
 
 	client_move_resize(state, client, False);
 }
@@ -351,24 +353,24 @@ function_window_tile(state_t *state, void *context, long flag)
 	client->geometry_saved = client->geometry;
 
 	if (flag & UP) {
-		client->geometry.y = 0;
+		client->geometry.y = screen->geometry.y;
 		client->geometry.height = screen->geometry.height / 2 - 2 * client->border_width;
 	} else if (flag & DOWN) {
-		client->geometry.y = screen->geometry.height / 2;
+		client->geometry.y = screen->geometry.y + screen->geometry.height / 2;
 		client->geometry.height = screen->geometry.height / 2 - 2 * client->border_width;
 	} else {
-		client->geometry.y = 0;
+		client->geometry.y = screen->geometry.y;
 		client->geometry.height = screen->geometry.height - 2 * client->border_width;
 	}
 
 	if (flag & LEFT) {
-		client->geometry.x = 0;
+		client->geometry.x = screen->geometry.x;
 		client->geometry.width = screen->geometry.width / 2 - 2 * client->border_width;
 	} else if (flag & RIGHT) {
-		client->geometry.x = screen->geometry.width / 2;
+		client->geometry.x = screen->geometry.x + screen->geometry.width / 2;
 		client->geometry.width = screen->geometry.width / 2 - 2 * client->border_width;
 	} else {
-		client->geometry.x = 0;
+		client->geometry.x = screen->geometry.x;
 		client->geometry.width = screen->geometry.width - 2 * client->border_width;
 	}
 
