@@ -1,5 +1,6 @@
 #include <dirent.h>
 #include <paths.h>
+#include <signal.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -20,6 +21,8 @@
 #define DOWN 0x02
 #define LEFT 0x04
 #define RIGHT 0x08
+
+extern sig_atomic_t wm_state;
 
 void
 function_group_cycle(state_t *state, void *context, long flag)
@@ -375,4 +378,11 @@ function_window_tile(state_t *state, void *context, long flag)
 	}
 
 	client_move_resize(state, client, False);
+}
+
+
+void
+function_wm_state(state_t *state, void *context, long flag)
+{
+	wm_state = flag;
 }

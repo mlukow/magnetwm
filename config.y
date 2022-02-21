@@ -76,6 +76,7 @@ static const struct {
 	{ FUNC_CC(window-move, window_move, 0) },
 	{ FUNC_CC(window-resize, window_resize, 0) },
 	{ FUNC_CC(window-restore, window_restore, 0) },
+	{ FUNC_GC(quit, wm_state, 3) },
 };
 
 TAILQ_HEAD(files, file_t) files = TAILQ_HEAD_INITIALIZER(files);

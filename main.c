@@ -1,10 +1,10 @@
-#include <errno.h>                                                                                                      
+#include <errno.h>
 #include <locale.h>
-#include <poll.h>                                                                                                       
+#include <poll.h>
 #include <pwd.h>
-#include <stdio.h>                                                                                                      
-#include <stdlib.h>                                                                                                     
-#include <string.h>                                                                                                     
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -17,7 +17,7 @@
 #define RESTART 2
 #define QUIT 3
 
-volatile sig_atomic_t wm_status = IDLE;
+volatile sig_atomic_t wm_state = IDLE;
 
 void
 signal_handler(int signum)
@@ -34,7 +34,7 @@ signal_handler(int signum)
             break;
         case SIGINT:
         case SIGTERM:
-            wm_status = QUIT;
+            wm_state = QUIT;
             break;
     }
 }
@@ -81,9 +81,9 @@ main(int argc, char **argv)
     pfd[0].fd = state->fd;
     pfd[0].events = POLLIN;
 
-    wm_status = RUNNING;
+    wm_state = RUNNING;
 
-    while (wm_status == RUNNING) {
+    while (wm_state == RUNNING) {
 		event_process(state);
 
         if (poll(pfd, 1, -1) == -1) {
@@ -95,7 +95,7 @@ main(int argc, char **argv)
 
     state_free(state);
 
-    if (wm_status == RESTART)
+    if (wm_state == RESTART)
         xexec("poppywm");
 
     return EXIT_SUCCESS;
