@@ -15,7 +15,8 @@ font	menu-input "Ubuntu Mono:size=18"
 command		terminal	"xterm -T Terminal"
 command		firefox		"firefox-esr"
 
-bind-key	MS-q			quit
+bind-key	CMS-q			quit
+bind-key	CMS-r			restart
 bind-key	M-Tab			group-cycle
 bind-key	5-less			window-cycle
 bind-key	MS-section		window-rcycle

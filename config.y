@@ -77,6 +77,7 @@ static const struct {
 	{ FUNC_CC(window-resize, window_resize, 0) },
 	{ FUNC_CC(window-restore, window_restore, 0) },
 	{ FUNC_GC(quit, wm_state, 3) },
+	{ FUNC_GC(restart, wm_state, 2) },
 };
 
 TAILQ_HEAD(files, file_t) files = TAILQ_HEAD_INITIALIZER(files);
@@ -206,7 +207,7 @@ fonts	: MENUINPUT STRING {
 		;
 
 string	: string STRING {
-			 if (asprintf(&$$, "%s %s", $1, $2) == -1) {
+			 if (xasprintf(&$$, "%s %s", $1, $2) == -1) {
 				 free($1);
 				 free($2);
 				 yyerror("string: asprintf");
