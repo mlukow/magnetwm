@@ -181,11 +181,11 @@ colors	: BORDERACTIVE STRING {
 		}
 		| MENUSELECTIONBACKGROUND STRING {
 			 free(config->colors[COLOR_MENU_SELECTION_BACKGROUND]);
-			 config->colors[COLOR_MENU_BACKGROUND] = $2;
+			 config->colors[COLOR_MENU_SELECTION_BACKGROUND] = $2;
 		}
 		| MENUSELECTIONFOREGROUND STRING {
 			 free(config->colors[COLOR_MENU_SELECTION_FOREGROUND]);
-			 config->colors[COLOR_MENU_FOREGROUND] = $2;
+			 config->colors[COLOR_MENU_SELECTION_FOREGROUND] = $2;
 		}
 		| MENUSEPARATOR STRING {
 			free(config->colors[COLOR_MENU_SEPARATOR]);
@@ -351,7 +351,7 @@ lookup(char *s)
 		{ "menu-input", MENUINPUT },
 		{ "menu-item", MENUITEM },
 		{ "menu-prompt", MENUPROMPT },
-		{ "menu-selection-background", MENUSELECTIONFOREGROUND },
+		{ "menu-selection-background", MENUSELECTIONBACKGROUND },
 		{ "menu-selection-foreground", MENUSELECTIONFOREGROUND },
 		{ "menu-separator", MENUSEPARATOR },
 		{ "no", NO },
