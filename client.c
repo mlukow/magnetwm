@@ -18,6 +18,7 @@ void client_configure(state_t *, client_t *);
 Atom *client_get_wm_state(state_t *, client_t *, int *);
 void client_restore_net_wm_state(state_t *, client_t *);
 void client_send_message(state_t *, client_t *, Atom, Time);
+void client_set_net_active_window(state_t *, client_t *);
 void client_set_net_wm_state(state_t *, client_t *);
 void client_set_wm_state(state_t *, client_t *, long);
 void client_update_class(state_t *, client_t *);
@@ -45,7 +46,7 @@ client_activate(state_t *state, client_t *client)
 	client->flags &= ~CLIENT_URGENCY;
 
 	client_draw_border(state, client);
-	// TODO: ewmh set net active window
+	client_set_net_active_window(state, client);
 }
 
 void
@@ -88,6 +89,7 @@ client_deactivate(state_t *state, client_t *client)
 	client->flags &= ~CLIENT_ACTIVE;
 
 	client_draw_border(state, client);
+	client_set_net_active_window(state, NULL);
 }
 
 void
@@ -198,7 +200,7 @@ client_hide(state_t *state, client_t *client)
 
 	if (client->flags & CLIENT_ACTIVE) {
 		client->flags &= ~CLIENT_ACTIVE;
-		// TODO: net active window
+		client_set_net_active_window(state, NULL);
 	}
 
 	client->flags |= CLIENT_HIDDEN;
@@ -420,6 +422,28 @@ client_send_message(state_t *state, client_t *client, Atom atom, Time time)
 	event.data.l[1] = time;
 
 	XSendEvent(state->display, client->window, False, NoEventMask, (XEvent *)&event);
+}
+
+void
+client_set_net_active_window(state_t *state, client_t *client)
+{
+	Window window;
+
+	if (client) {
+		window = client->window;
+	} else {
+		window = None;
+	}
+
+	XChangeProperty(
+			state->display,
+			state->root,
+			state->atoms[_NET_ACTIVE_WINDOW],
+			XA_WINDOW,
+			32,
+			PropModeReplace,
+			(unsigned char *)&window,
+			1);
 }
 
 void

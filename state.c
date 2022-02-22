@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <X11/extensions/Xrandr.h>
+#include <X11/Xatom.h>
 
 #include "client.h"
 #include "config.h"
@@ -16,6 +17,7 @@
 void state_bind(state_t *);
 int state_error_handler(Display *, XErrorEvent *);
 Bool state_init_atoms(state_t *);
+void state_set_net_supported(state_t *);
 Bool state_update_clients(state_t *);
 Bool state_update_screens(state_t *);
 
@@ -170,6 +172,8 @@ state_init(char *display_name, char *config_path)
 		return False;
 	}
 
+	state_set_net_supported(state);
+
 	if (!state_update_screens(state)) {
 		state_free(state);
 		return NULL;
@@ -259,6 +263,49 @@ state_init_atoms(state_t *state)
 	}
 
 	return True;
+}
+
+void
+state_set_net_supported(state_t *state)
+{
+	Atom supported[] = {
+		state->atoms[_NET_SUPPORTED],
+		state->atoms[_NET_SUPPORTING_WM_CHECK],
+		state->atoms[_NET_ACTIVE_WINDOW],
+		state->atoms[_NET_CLIENT_LIST],
+		state->atoms[_NET_CLIENT_LIST_STACKING],
+		state->atoms[_NET_NUMBER_OF_DESKTOPS],
+		state->atoms[_NET_CURRENT_DESKTOP],
+		state->atoms[_NET_DESKTOP_VIEWPORT],
+		state->atoms[_NET_DESKTOP_GEOMETRY],
+		state->atoms[_NET_VIRTUAL_ROOTS],
+		state->atoms[_NET_SHOWING_DESKTOP],
+		state->atoms[_NET_DESKTOP_NAMES],
+		state->atoms[_NET_WORKAREA],
+		state->atoms[_NET_WM_NAME],
+		state->atoms[_NET_WM_DESKTOP],
+		state->atoms[_NET_CLOSE_WINDOW],
+		state->atoms[_NET_WM_STATE],
+		state->atoms[_NET_WM_STATE_STICKY],
+		state->atoms[_NET_WM_STATE_MAXIMIZED_VERT],
+		state->atoms[_NET_WM_STATE_MAXIMIZED_HORZ],
+		state->atoms[_NET_WM_STATE_HIDDEN],
+		state->atoms[_NET_WM_STATE_FULLSCREEN],
+		state->atoms[_NET_WM_STATE_DEMANDS_ATTENTION],
+		state->atoms[_NET_WM_STATE_SKIP_PAGER],
+		state->atoms[_NET_WM_STATE_SKIP_TASKBAR],
+		state->atoms[_CWM_WM_STATE_FREEZE]
+	};
+
+	XChangeProperty(
+			state->display,
+			state->root,
+			state->atoms[_NET_SUPPORTED],
+			XA_ATOM,
+			32,
+			PropModeReplace,
+			(unsigned char *)supported,
+			26);
 }
 
 Bool
