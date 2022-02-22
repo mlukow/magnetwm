@@ -284,8 +284,9 @@ event_handle_key_press(state_t *state, XKeyEvent *event)
 {
 	binding_t *binding;
 	client_t *client;
-	KeySym keysym;
+	KeySym keysym, skeysym;
 	screen_t *screen;
+	unsigned int modshift;
 
 	client = client_find_active(state);
 	if (client) {
@@ -294,19 +295,32 @@ event_handle_key_press(state_t *state, XKeyEvent *event)
 		screen = screen_find_active(state);
 	}
 
+	keysym = XkbKeycodeToKeysym(state->display, event->keycode, 0, 0);
+	skeysym = XkbKeycodeToKeysym(state->display, event->keycode, 0, 1);
+
 	event->state &= ~(LockMask | Mod2Mask | 0x2000);
 
-	keysym = XkbKeycodeToKeysym(state->display, event->keycode, 0, 0);
-
 	TAILQ_FOREACH(binding, &state->config->keybindings, entry) {
-		if ((event->state == binding->modifier) && (binding->button == keysym)) {
-			if ((binding->context == BINDING_CONTEXT_CLIENT) && client) {
-				binding->function(state, client, binding->flag);
-			} else if ((binding->context == BINDING_CONTEXT_SCREEN) && screen) {
-				binding->function(state, screen, binding->flag);
-			} else if (binding->context == BINDING_CONTEXT_GLOBAL) {
-				binding->function(state, screen, binding->flag);
-			}
+		if ((binding->button != keysym) && (binding->button == skeysym)) {
+			modshift = ShiftMask;
+		} else {
+			modshift = 0;
+		}
+
+		if (event->state != (binding->modifier | modshift)) {
+			continue;
+		}
+
+		if (binding->button != ((modshift == 0) ? keysym : skeysym)) {
+			continue;
+		}
+
+		if ((binding->context == BINDING_CONTEXT_CLIENT) && client) {
+			binding->function(state, client, binding->flag);
+		} else if ((binding->context == BINDING_CONTEXT_SCREEN) && screen) {
+			binding->function(state, screen, binding->flag);
+		} else if (binding->context == BINDING_CONTEXT_GLOBAL) {
+			binding->function(state, screen, binding->flag);
 		}
 	}
 

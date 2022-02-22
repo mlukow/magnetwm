@@ -18,11 +18,6 @@
 #include "utils.h"
 #include "xutils.h"
 
-#define UP 0x01
-#define DOWN 0x02
-#define LEFT 0x04
-#define RIGHT 0x08
-
 extern sig_atomic_t wm_state;
 
 void
@@ -237,6 +232,7 @@ function_window_move(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
 	int move = 1, result, x, y;
+	screen_t *screen;
 	Time time = 0;
 	XEvent event;
 
@@ -286,6 +282,12 @@ function_window_move(struct state_t *state, void *context, long flag)
 	}
 
 	XUngrabPointer(state->display, CurrentTime);
+
+	screen = screen_for_client(state, client);
+	if (screen != client->group->desktop->screen) {
+		screen_adopt(state, screen, client);
+	}
+
 	XFlush(state->display);
 }
 
@@ -403,23 +405,35 @@ function_window_tile(state_t *state, void *context, long flag)
 
 	client->geometry_saved = client->geometry;
 
-	if (flag & UP) {
+	if (flag & DIRECTION_UP) {
 		geometry.y = screen->geometry.y;
 		geometry.height = screen->geometry.height / 2 - 2 * client->border_width;
-	} else if (flag & DOWN) {
+	} else if (flag & DIRECTION_UP_THIRD) {
+		geometry.y = screen->geometry.y;
+		geometry.height = screen->geometry.height / 3 - 2 * client->border_width;
+	} else if (flag & DIRECTION_DOWN) {
 		geometry.y = screen->geometry.y + screen->geometry.height / 2;
 		geometry.height = screen->geometry.height / 2 - 2 * client->border_width;
+	} else if (flag & DIRECTION_DOWN_THIRD) {
+		geometry.y = screen->geometry.y + screen->geometry.height - screen->geometry.height / 3;
+		geometry.height = screen->geometry.height / 3 - 2 * client->border_width;
 	} else {
 		geometry.y = screen->geometry.y;
 		geometry.height = screen->geometry.height - 2 * client->border_width;
 	}
 
-	if (flag & LEFT) {
+	if (flag & DIRECTION_LEFT) {
 		geometry.x = screen->geometry.x;
 		geometry.width = screen->geometry.width / 2 - 2 * client->border_width;
-	} else if (flag & RIGHT) {
+	} else if (flag & DIRECTION_LEFT_THIRD) {
+		geometry.x = screen->geometry.x;
+		geometry.width = screen->geometry.width / 3 - 2 * client->border_width;
+	} else if (flag & DIRECTION_RIGHT) {
 		geometry.x = screen->geometry.x + screen->geometry.width / 2;
 		geometry.width = screen->geometry.width / 2 - 2 * client->border_width;
+	} else if (flag & DIRECTION_RIGHT_THIRD) {
+		geometry.x = screen->geometry.x + screen->geometry.width - screen->geometry.width / 3;
+		geometry.width = screen->geometry.width / 3 - 2 * client->border_width;
 	} else {
 		geometry.x = screen->geometry.x;
 		geometry.width = screen->geometry.width - 2 * client->border_width;

@@ -53,3 +53,11 @@ dkms.conf
 
 # Vim files
 *.swp
+
+# Output files
+.deps/
+Makefile
+config.c
+config.log
+config.status
+magnetwm

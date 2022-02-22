@@ -51,6 +51,10 @@ group_free(group_t *group)
 void
 group_unassign(client_t *client)
 {
+	if (!client->group) {
+		return;
+	}
+
 	TAILQ_REMOVE(&client->group->clients, client, entry);
 	if (TAILQ_EMPTY(&client->group->clients)) {
 		TAILQ_REMOVE(&client->group->desktop->groups, client->group, entry);

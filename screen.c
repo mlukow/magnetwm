@@ -31,6 +31,8 @@ screen_adopt(state_t *state, screen_t *screen, client_t *client)
 	Bool dirty = False;
 	group_t *group;
 
+	group_unassign(client);
+
 	group = group_assign(screen->desktops[screen->desktop_index], client);
 	group->desktop = screen->desktops[screen->desktop_index];
 
