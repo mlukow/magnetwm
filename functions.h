@@ -23,6 +23,7 @@ void function_window_cycle(struct state_t *, void *, long);
 void function_window_fullscreen(struct state_t *, void *, long);
 void function_window_maximize(struct state_t *, void *, long);
 void function_window_move(struct state_t *, void *, long);
+void function_window_move_to_screen(struct state_t *, void *, long);
 void function_window_resize(struct state_t *, void *, long);
 void function_window_restore(struct state_t *, void *, long);
 void function_window_tile(struct state_t *, void *, long);

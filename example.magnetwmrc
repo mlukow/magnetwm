@@ -42,6 +42,10 @@ bind-key	MS-m			window-tile-down-right
 bind-key	CMS-m			window-tile-down-right-third
 bind-key	MS-c			window-center
 bind-key	MS-Return		window-maximize
+bind-key	CM4-h			window-move-to-screen-left
+bind-key	CM4-l			window-move-to-screen-right
+bind-key	CM4-j			window-move-to-screen-below
+bind-key	CM4-k			window-move-to-screen-above
 bind-key	MS-BackSpace	window-restore
 bind-key	M-t				terminal
 

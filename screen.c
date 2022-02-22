@@ -89,6 +89,62 @@ screen_find_by_name(state_t *state, char *name)
 }
 
 screen_t *
+screen_find_above(state_t *state, screen_t *screen)
+{
+	screen_t *current;
+
+	TAILQ_FOREACH(current, &state->screens, entry) {
+		if (current->geometry.y + current->geometry.height == screen->geometry.y) {
+			return current;
+		}
+	}
+
+	return NULL;
+}
+
+screen_t *
+screen_find_below(state_t *state, screen_t *screen)
+{
+	screen_t *current;
+
+	TAILQ_FOREACH(current, &state->screens, entry) {
+		if (current->geometry.y == screen->geometry.y + screen->geometry.height) {
+			return current;
+		}
+	}
+
+	return NULL;
+}
+
+screen_t *
+screen_find_left(state_t *state, screen_t *screen)
+{
+	screen_t *current;
+
+	TAILQ_FOREACH(current, &state->screens, entry) {
+		if (current->geometry.x + current->geometry.width == screen->geometry.x) {
+			return current;
+		}
+	}
+
+	return NULL;
+}
+
+screen_t *
+screen_find_right(state_t *state, screen_t *screen)
+{
+	screen_t *current;
+
+	TAILQ_FOREACH(current, &state->screens, entry) {
+		if (current->geometry.x == screen->geometry.x + screen->geometry.width) {
+			return current;
+		}
+	}
+
+	return NULL;
+}
+
+screen_t *
 screen_find_unwired(state_t *state)
 {
 	screen_t *screen;

@@ -292,6 +292,40 @@ function_window_move(struct state_t *state, void *context, long flag)
 }
 
 void
+function_window_move_to_screen(struct state_t *state, void *context, long flag)
+{
+	client_t *client = (client_t *)context;
+	geometry_t geometry;
+	screen_t *screen = NULL;
+
+	if (flag == DIRECTION_UP) {
+		screen = screen_find_above(state, client->group->desktop->screen);
+	} else if (flag == DIRECTION_DOWN) {
+		screen = screen_find_below(state, client->group->desktop->screen);
+	} else if (flag == DIRECTION_LEFT) {
+		screen = screen_find_left(state, client->group->desktop->screen);
+	} else if (flag == DIRECTION_RIGHT) {
+		screen = screen_find_right(state, client->group->desktop->screen);
+	}
+
+	if (screen) {
+		geometry.x = screen->geometry.x + (client->geometry.x - client->group->desktop->screen->geometry.x);
+		geometry.y = screen->geometry.y + (client->geometry.y - client->group->desktop->screen->geometry.y);
+		geometry.width = client->geometry.width;
+		geometry.height = client->geometry.height;
+
+		if (state->config->animate_transitions) {
+			x_animate(state->display, client->window, client->geometry, geometry, state->config->animation_duration);
+		}
+
+		client->geometry = geometry;
+
+		client_move_resize(state, client, False);
+		screen_adopt(state, screen, client);
+	}
+}
+
+void
 function_window_resize(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
