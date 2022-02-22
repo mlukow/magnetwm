@@ -1,3 +1,21 @@
+commit 14774929d2261dfc90ef24d007b2140eb3ab62fa
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Tue Feb 22 16:33:18 2022 +0100
+
+    Added moving windows between screens
+
+commit f20c7461332cf4b48536dfb210effa2d790f3131
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Tue Feb 22 14:32:16 2022 +0100
+
+    Fixed moving windows between screens, added thirds tiling
+
+commit 14aed5d664a8836746433d1a0eb057d2b39f85a9
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Mon Feb 21 22:32:33 2022 +0100
+
+    Updated documentation
+
 commit d22e0181f6d8a7f1abfc3e92f94fbd12c9d41f03
 Author: Marcin Lukow <marcin@nerdy.cat>
 Date:   Mon Feb 21 22:32:09 2022 +0100
