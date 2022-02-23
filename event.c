@@ -33,7 +33,7 @@ event_handle_button_press(state_t *state, XButtonPressedEvent *event)
 	if (client) {
 		client_raise(state, client);
 
-		if (!(client->flags & CLIENT_ACTIVE)) {
+		if (!(client->flags & CLIENT_ACTIVE) && !(client->flags & CLIENT_IGNORE)) {
 			client_activate(state, client);
 		}
 	} else {
@@ -67,6 +67,7 @@ event_handle_client_message(state_t *state, XClientMessageEvent *event)
 	Atom first, second;
 	client_t *client;
 	int action;
+	screen_t *screen;
 
 	action = event->data.l[0];
 	first = event->data.l[1];
@@ -207,22 +208,9 @@ event_handle_client_message(state_t *state, XClientMessageEvent *event)
 			} else if (action == _NET_WM_STATE_TOGGLE) {
 				client_toggle_skip_taskbar(state, client);
 			}
-		} else if ((first == state->atoms[_CWM_WM_STATE_FREEZE]) ||
-				(second == state->atoms[_CWM_WM_STATE_FREEZE])) {
-			if (action == _NET_WM_STATE_ADD) {
-				if (!(client->flags & CLIENT_FREEZE)) {
-					client_toggle_freeze(state, client);
-				}
-			} else if (action == _NET_WM_STATE_REMOVE) {
-				if (client->flags & CLIENT_FREEZE) {
-					client_toggle_freeze(state, client);
-				}
-			} else if (action == _NET_WM_STATE_TOGGLE) {
-				client_toggle_freeze(state, client);
-			}
 		}
 	} else if (event->message_type == state->atoms[_NET_CURRENT_DESKTOP]) {
-		printf("change desktop to %ld\n", event->data.l[0]);
+		desktop_switch_to_index(state, event->data.l[0]);
 	}
 }
 
@@ -347,7 +335,10 @@ event_handle_map_request(state_t *state, XMapRequestEvent *event)
 	}
 
 	client_show(state, client);
-	client_activate(state, client);
+
+	if (!(client->flags & CLIENT_IGNORE)) {
+		client_activate(state, client);
+	}
 
 	TAILQ_REMOVE(&client->group->desktop->groups, client->group, entry);
 	TAILQ_INSERT_TAIL(&client->group->desktop->groups, client->group, entry);

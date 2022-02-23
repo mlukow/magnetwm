@@ -4,6 +4,27 @@
 #include "client.h"
 #include "desktop.h"
 #include "group.h"
+#include "state.h"
+
+void
+group_activate(state_t *state, group_t *group)
+{
+	client_t *client;
+
+	TAILQ_REMOVE(&group->desktop->groups, group, entry);
+	TAILQ_INSERT_TAIL(&group->desktop->groups, group, entry);
+
+	TAILQ_FOREACH(client, &group->clients, entry) {
+		client_raise(state, client);
+	}
+
+	TAILQ_FOREACH_REVERSE(client, &group->clients, client_q, entry) {
+		if (!(client->flags & CLIENT_IGNORE)) {
+			client_activate(state, client);
+			return;
+		}
+	}
+}
 
 group_t *
 group_assign(desktop_t *desktop, client_t *client)
@@ -32,6 +53,16 @@ group_assign(desktop_t *desktop, client_t *client)
 }
 
 void
+group_deactivate(state_t *state, group_t *group)
+{
+	client_t *client;
+
+	TAILQ_FOREACH(client, &group->clients, entry) {
+		client_deactivate(state, client);
+	}
+}
+
+void
 group_free(group_t *group)
 {
 	client_t *client;
@@ -46,6 +77,31 @@ group_free(group_t *group)
 	}
 
 	free(group->name);
+}
+
+void
+group_hide(state_t *state, group_t *group)
+{
+	client_t *client;
+
+	TAILQ_FOREACH(client, &group->clients, entry) {
+		if (!(client->flags & CLIENT_STICKY) && !(client->flags & CLIENT_HIDDEN)) {
+			client_deactivate(state, client);
+			client_hide(state, client);
+		}
+	}
+}
+
+void
+group_show(state_t *state, group_t *group)
+{
+	client_t *client;
+
+	TAILQ_FOREACH(client, &group->clients, entry) {
+		if (client->flags & CLIENT_HIDDEN) {
+			client_show(state, client);
+		}
+	}
 }
 
 void

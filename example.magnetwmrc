@@ -2,6 +2,8 @@ border-width		1
 animate-transitions	yes
 animation-duration	100
 
+ignore	Polybar
+
 color	border-active	rgb:00/ff/00
 color	border-inactive	rgb:00/00/ff
 color	border-urgent	rgb:ff/00/00

@@ -114,6 +114,7 @@ void config_add_command(config_t *, char *, char *);
 int config_bind_key(config_t *, char *, char *);
 char *config_bind_mask(char *, unsigned int *);
 int config_bind_mouse(config_t *, char *, char *);
+void config_ignore(config_t *, char *);
 int findeol(void);
 int kw_cmp(const void *, const void *);
 int lgetc(int);
@@ -146,6 +147,7 @@ static config_t *config;
 %token COMMAND
 %token ERROR
 %token FONT
+%token IGNORE
 %token MENUBACKGROUND
 %token MENUFOREGROUND
 %token MENUINPUT
@@ -283,6 +285,10 @@ main	: ANIMATETRANSITIONS yesno {
 			 free($2);
 			 free($3);
 		}
+		| IGNORE STRING {
+			config_ignore(config, $2);
+			free($2);
+		}
 		;
 
 %%
@@ -376,6 +382,7 @@ lookup(char *s)
 		{ "color", COLOR },
 		{ "command", COMMAND },
 		{ "font", FONT },
+		{ "ignore", IGNORE },
 		{ "menu-background", MENUBACKGROUND },
 		{ "menu-foreground", MENUFOREGROUND },
 		{ "menu-input", MENUINPUT },
@@ -645,7 +652,8 @@ config_bind_mask(char *name, unsigned int *mask)
 	return dash + 1;
 }
 
-int config_bind_mouse(config_t *config, char *bind, char *cmd)
+int
+config_bind_mouse(config_t *config, char *bind, char *cmd)
 {
 	char *button, *errstr;
 	int i;
@@ -711,6 +719,21 @@ config_free(config_t *config)
 	free(config);
 }
 
+void
+config_ignore(config_t *config, char *class_name)
+{
+	ignored_t *ignored;
+	TAILQ_FOREACH(ignored, &config->ignored, entry) {
+		if (!strcmp(ignored->class_name, class_name)) {
+			return;
+		}
+	}
+
+	ignored = calloc(1, sizeof(ignored_t));
+	ignored->class_name = strdup(class_name);
+	TAILQ_INSERT_TAIL(&config->ignored, ignored, entry);
+}
+
 config_t *
 config_init(char *path)
 {
@@ -739,6 +762,7 @@ config_init(char *path)
 	TAILQ_INIT(&config->commands);
 	TAILQ_INIT(&config->keybindings);
 	TAILQ_INIT(&config->mousebindings);
+	TAILQ_INIT(&config->ignored);
 
 	config_add_command(config, "terminal", "xterm");
 

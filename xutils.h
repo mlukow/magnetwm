@@ -11,6 +11,7 @@ typedef enum ewmh_t {
 	WM_DELETE_WINDOW,
 	WM_TAKE_FOCUS,
 	WM_PROTOCOLS,
+	UTF8_STRING,
 	WM_CHANGE_STATE,
 
 	// EWMH root properties
@@ -60,7 +61,6 @@ typedef enum ewmh_t {
 	_NET_WM_STATE_DEMANDS_ATTENTION,
 	_NET_WM_STATE_SKIP_PAGER,
 	_NET_WM_STATE_SKIP_TASKBAR,
-	_CWM_WM_STATE_FREEZE,
 
 	EWMH_NITEMS
 } ewmh_t;

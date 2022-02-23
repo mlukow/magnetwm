@@ -9,6 +9,7 @@ struct state_t;
 
 TAILQ_HEAD(command_q, command_t);
 TAILQ_HEAD(binding_q, binding_t);
+TAILQ_HEAD(ignored_q, ignored_t);
 
 typedef enum {
 	BINDING_CONTEXT_CLIENT,
@@ -29,6 +30,13 @@ typedef enum {
 	COLOR_NITEMS
 } color_t;
 
+typedef struct command_t {
+	TAILQ_ENTRY(command_t) entry;
+
+	char *name;
+	char *path;
+} command_t;
+
 typedef enum {
 	FONT_MENU_INPUT,
 	FONT_MENU_ITEM,
@@ -45,17 +53,17 @@ typedef struct binding_t {
 	void (*function)(struct state_t *, void *, long);
 } binding_t;
 
-typedef struct command_t {
-	TAILQ_ENTRY(command_t) entry;
+typedef struct ignored_t {
+	TAILQ_ENTRY(ignored_t) entry;
 
-	char *name;
-	char *path;
-} command_t;
+	char *class_name;
+} ignored_t;
 
 typedef struct config_t {
 	struct command_q commands;
 	struct binding_q keybindings;
 	struct binding_q mousebindings;
+	struct ignored_q ignored;
 
 	char *colors[COLOR_NITEMS];
 	char *fonts[FONT_NITEMS];

@@ -41,13 +41,7 @@ function_group_cycle(state_t *state, void *context, long flag)
 	if (group) {
 		current = TAILQ_LAST(&desktop->groups, group_q);
 		if (current != group) {
-			TAILQ_REMOVE(&desktop->groups, group, entry);
-			TAILQ_INSERT_TAIL(&desktop->groups, group, entry);
-
-			TAILQ_FOREACH(client, &group->clients, entry) {
-				client_raise(state, client);
-				client_activate(state, client);
-			}
+			group_activate(state, group);
 		}
 	}
 

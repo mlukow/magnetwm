@@ -42,6 +42,9 @@ client_activate(state_t *state, client_t *client)
 		client_send_message(state, client, state->atoms[WM_TAKE_FOCUS], CurrentTime);
 	}
 
+	TAILQ_REMOVE(&client->group->clients, client, entry);
+	TAILQ_INSERT_TAIL(&client->group->clients, client, entry);
+
 	client->flags |= CLIENT_ACTIVE;
 	client->flags &= ~CLIENT_URGENCY;
 
@@ -211,6 +214,7 @@ client_t *
 client_init(state_t *state, Window window, Bool initial)
 {
 	client_t *client;
+	ignored_t *ignored;
 	XWindowAttributes attributes;
 
 	if (window == None) {
@@ -245,6 +249,7 @@ client_init(state_t *state, Window window, Bool initial)
 	client->geometry.height = attributes.height;
 
 	client_update_class(state, client);
+	client_update_wm_protocols(state, client);
 	client_update_size_hints(state, client);
 	client_update_wm_hints(state, client);
 	client_update_wm_name(state, client);
@@ -254,6 +259,13 @@ client_init(state_t *state, Window window, Bool initial)
 	if (attributes.map_state != IsViewable) {
 		if (client->initial_state) {
 			client_set_wm_state(state, client, client->initial_state);
+		}
+	}
+
+	TAILQ_FOREACH(ignored, &state->config->ignored, entry) {
+		if (!strcmp(ignored->class_name, client->class_name)) {
+			client->flags |= CLIENT_IGNORE;
+			client->border_width = 0;
 		}
 	}
 
@@ -299,9 +311,10 @@ client_next(client_t *client)
 {
 	client_t *next;
 
-	next = TAILQ_NEXT(client, entry);
+	while (((next = TAILQ_NEXT(client, entry)) != NULL) && (next->flags & CLIENT_IGNORE));
 	if (!next) {
 		next = TAILQ_FIRST(&client->group->clients);
+		while ((next->flags & CLIENT_IGNORE) && ((next = TAILQ_NEXT(client, entry)) != NULL));
 	}
 
 	return next;
@@ -312,9 +325,10 @@ client_previous(client_t *client)
 {
 	client_t *previous;
 
-	previous = TAILQ_PREV(client, client_q, entry);
+	while (((previous = TAILQ_PREV(client, client_q, entry)) != NULL) && (previous->flags & CLIENT_IGNORE));
 	if (!previous) {
 		previous = TAILQ_LAST(&client->group->clients, client_q);
+		while ((previous->flags & CLIENT_IGNORE) && ((previous = TAILQ_PREV(client, client_q, entry)) != NULL));
 	}
 
 	return previous;
@@ -334,29 +348,34 @@ client_remove(state_t *state, client_t *client)
 	/*
 	x_ewmh_set_client_list(state);
 	x_ewmh_set_client_list_stacking(state);
+	*/
 
 	if (client->flags & CLIENT_ACTIVE) {
-		// TODO: ewmh set net active window to none
+		client_set_net_active_window(state, None);
 	}
-	*/
 
 	group = client->group;
 	group_unassign(client);
 	client_free(client);
 
-	client = TAILQ_LAST(&group->clients, client_q);
-	if (client) {
-		client_activate(state, client);
-	} else {
-		group = TAILQ_LAST(&group->desktop->groups, group_q);
-		if (group) {
-			TAILQ_FOREACH(client, &group->clients, entry) {
-				client_raise(state, client);
-			}
+	TAILQ_FOREACH_REVERSE(client, &group->clients, client_q, entry) {
+		if (!(client->flags & CLIENT_IGNORE)) {
+			client_raise(state, client);
+			client_activate(state, client);
+			return;
+		}
+	}
 
-			client = TAILQ_LAST(&group->clients, client_q);
-			if (client) {
+	group = TAILQ_LAST(&group->desktop->groups, group_q);
+	if (group) {
+		TAILQ_FOREACH(client, &group->clients, entry) {
+			client_raise(state, client);
+		}
+
+		TAILQ_FOREACH_REVERSE(client, &group->clients, client_q, entry) {
+			if (!(client->flags & CLIENT_IGNORE)) {
 				client_activate(state, client);
+				break;
 			}
 		}
 	}
@@ -400,8 +419,6 @@ client_restore_net_wm_state(state_t *state, client_t *client)
 			client_toggle_skip_pager(state, client);
 		} else if (atoms[i] == state->atoms[_NET_WM_STATE_SKIP_TASKBAR]) {
 			client_toggle_skip_taskbar(state, client);
-		} else if (atoms[i] == state->atoms[_CWM_WM_STATE_FREEZE]) {
-			client_toggle_freeze(state, client);
 		}
 	}
 
@@ -463,8 +480,7 @@ client_set_net_wm_state(state_t *state, client_t *client)
 			(input[i] != state->atoms[_NET_WM_STATE_FULLSCREEN]) &&
 			(input[i] != state->atoms[_NET_WM_STATE_DEMANDS_ATTENTION]) &&
 			(input[i] != state->atoms[_NET_WM_STATE_SKIP_PAGER]) &&
-			(input[i] != state->atoms[_NET_WM_STATE_SKIP_TASKBAR]) &&
-			(input[i] != state->atoms[_CWM_WM_STATE_FREEZE])) {
+			(input[i] != state->atoms[_NET_WM_STATE_SKIP_TASKBAR])) {
 			output[j++] = input[i];
 		}
 	}
@@ -497,10 +513,6 @@ client_set_net_wm_state(state_t *state, client_t *client)
 
 	if (client->flags & CLIENT_SKIP_TASKBAR) {
 		output[j++] = state->atoms[_NET_WM_STATE_SKIP_TASKBAR];
-	}
-
-	if (client->flags & CLIENT_FREEZE) {
-		output[j++] = state->atoms[_CWM_WM_STATE_FREEZE];
 	}
 
 	if (j > 0) {
