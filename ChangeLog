@@ -1,3 +1,9 @@
+commit 1edee05a8e07f125530bdc1308c11c04c8654de3
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Wed Feb 23 18:51:47 2022 +0100
+
+    Initial desktop support
+
 commit f633d18f65638f36a0d9ecdf716abbb319068776
 Author: Marcin Lukow <marcin@nerdy.cat>
 Date:   Tue Feb 22 23:15:29 2022 +0100
