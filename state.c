@@ -490,9 +490,6 @@ state_update_clients(state_t *state)
 	for (i = 0; i < count; i++) {
 		client = client_init(state, windows[i], True);
 		if (client) {
-			screen = screen_for_client(state, client);
-			screen_adopt(state, screen, client);
-
 			client_activate(state, client);
 		}
 	}

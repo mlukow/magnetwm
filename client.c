@@ -215,6 +215,7 @@ client_init(state_t *state, Window window, Bool initial)
 {
 	client_t *client;
 	ignored_t *ignored;
+	screen_t *screen;
 	XWindowAttributes attributes;
 
 	if (window == None) {
@@ -247,20 +248,29 @@ client_init(state_t *state, Window window, Bool initial)
 	client->geometry.y = attributes.y;
 	client->geometry.width = attributes.width;
 	client->geometry.height = attributes.height;
+	client->geometry_saved = client->geometry;
+
+	screen = screen_for_client(state, client);
+	if (!screen) {
+		free(client);
+		return NULL;
+	}
 
 	client_update_class(state, client);
+	client_update_wm_name(state, client);
 	client_update_wm_protocols(state, client);
 	client_update_size_hints(state, client);
 	client_update_wm_hints(state, client);
-	client_update_wm_name(state, client);
-
-	client_restore_net_wm_state(state, client);
 
 	if (attributes.map_state != IsViewable) {
 		if (client->initial_state) {
 			client_set_wm_state(state, client, client->initial_state);
 		}
 	}
+
+	screen_adopt(state, screen, client);
+
+	client_restore_net_wm_state(state, client);
 
 	TAILQ_FOREACH(ignored, &state->config->ignored, entry) {
 		if (!strcmp(ignored->class_name, client->class_name)) {
@@ -495,12 +505,16 @@ client_set_net_wm_state(state_t *state, client_t *client)
 		output[j++] = state->atoms[_NET_WM_STATE_HIDDEN];
 	}
 
-	if (client->flags & CLIENT_MAXIMIZED) {
+	if (client->flags & CLIENT_FULLSCREEN) {
 		output[j++] = state->atoms[_NET_WM_STATE_FULLSCREEN];
-	} else if (client->flags & CLIENT_VMAXIMIZED) {
-		output[j++] = state->atoms[_NET_WM_STATE_MAXIMIZED_VERT];
-	} else if (client->flags & CLIENT_HMAXIMIZED) {
-		output[j++] = state->atoms[_NET_WM_STATE_MAXIMIZED_HORZ];
+	} else {
+		if (client->flags & CLIENT_VMAXIMIZED) {
+			output[j++] = state->atoms[_NET_WM_STATE_MAXIMIZED_VERT];
+		}
+
+		if (client->flags & CLIENT_HMAXIMIZED) {
+			output[j++] = state->atoms[_NET_WM_STATE_MAXIMIZED_HORZ];
+		}
 	}
 
 	if (client->flags & CLIENT_URGENCY) {
@@ -630,7 +644,9 @@ client_toggle_maximize(state_t *state, client_t *client)
 	screen = client->group->desktop->screen;
 
 	if ((client->flags & CLIENT_MAXFLAGS) == CLIENT_MAXIMIZED) {
-		client->geometry = client->geometry_saved;
+		if ((client->geometry_saved.width > 0) && (client->geometry_saved.height > 0)) {
+			client->geometry = client->geometry_saved;
+		}
 		client->flags &= ~CLIENT_MAXIMIZED;
 	} else {
 		client->geometry_saved = client->geometry;
