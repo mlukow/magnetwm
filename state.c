@@ -19,6 +19,7 @@ int state_error_handler(Display *, XErrorEvent *);
 Bool state_init_atoms(state_t *);
 void state_set_current_desktop(state_t *);
 void state_set_desktop_names(state_t *);
+void state_set_desktop_viewports(state_t *);
 void state_set_net_supported(state_t *);
 void state_set_number_of_desktops(state_t *);
 Bool state_update_clients(state_t *);
@@ -189,6 +190,7 @@ state_init(char *display_name, char *config_path)
 
 	state_set_number_of_desktops(state);
 	state_set_desktop_names(state);
+	state_set_desktop_viewports(state);
 	state_set_current_desktop(state);
 
 	attributes.cursor = state->cursors[CURSOR_NORMAL];
@@ -330,6 +332,38 @@ state_set_desktop_names(state_t *state)
 			PropModeReplace,
 			(unsigned char *)names,
 			names_length);
+}
+
+void
+state_set_desktop_viewports(state_t *state)
+{
+	int i, viewports_length = 0;
+	long *viewports;
+	screen_t *screen;
+
+	TAILQ_FOREACH(screen, &state->screens, entry) {
+		if (viewports_length == 0) {
+			viewports = calloc(2 * screen->desktop_count, sizeof(long));
+		} else {
+			viewports = realloc(viewports, (viewports_length + 2 * screen->desktop_count) * sizeof(long));
+		}
+
+		for (i = 0; i < screen->desktop_count; i++) {
+			viewports[viewports_length + 2 * i] = screen->geometry.x;
+			viewports[viewports_length + 2 * i + 1] = screen->geometry.y;
+		}
+		viewports_length += 2 * screen->desktop_count;
+	}
+
+	XChangeProperty(
+			state->display,
+			state->root,
+			state->atoms[_NET_DESKTOP_VIEWPORT],
+			XA_CARDINAL,
+			32,
+			PropModeReplace,
+			(unsigned char *)viewports,
+			viewports_length);
 }
 
 void
