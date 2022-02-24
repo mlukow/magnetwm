@@ -18,6 +18,7 @@ void state_bind(state_t *);
 int state_error_handler(Display *, XErrorEvent *);
 Bool state_init_atoms(state_t *);
 void state_set_current_desktop(state_t *);
+void state_set_desktop_geometries(state_t *);
 void state_set_desktop_names(state_t *);
 void state_set_desktop_viewports(state_t *);
 void state_set_net_supported(state_t *);
@@ -189,6 +190,7 @@ state_init(char *display_name, char *config_path)
 	}
 
 	state_set_number_of_desktops(state);
+	state_set_desktop_geometries(state);
 	state_set_desktop_names(state);
 	state_set_desktop_viewports(state);
 	state_set_current_desktop(state);
@@ -301,6 +303,42 @@ state_set_current_desktop(state_t *state)
 }
 
 void
+state_set_desktop_geometries(state_t *state)
+{
+	int i, geometries_length = 0;
+	long *geometries;
+	screen_t *screen;
+
+	TAILQ_FOREACH(screen, &state->screens, entry) {
+		if (geometries_length == 0) {
+			geometries = calloc(2 * screen->desktop_count, sizeof(long));
+		} else {
+			geometries = realloc(geometries, (geometries_length + 2 * screen->desktop_count) * sizeof(long));
+		}
+
+		for (i = 0; i < screen->desktop_count; i++) {
+			geometries[geometries_length + 2 * i] = screen->geometry.width;
+			geometries[geometries_length + 2 * i + 1] = screen->geometry.height;
+		}
+		geometries_length += 2 * screen->desktop_count;
+	}
+
+	XChangeProperty(
+			state->display,
+			state->root,
+			state->atoms[_NET_DESKTOP_VIEWPORT],
+			XA_CARDINAL,
+			32,
+			PropModeReplace,
+			(unsigned char *)geometries,
+			geometries_length);
+
+	if (geometries_length > 0) {
+		free(geometries);
+	}
+}
+
+void
 state_set_desktop_names(state_t *state)
 {
 	char *names = NULL;
@@ -332,6 +370,10 @@ state_set_desktop_names(state_t *state)
 			PropModeReplace,
 			(unsigned char *)names,
 			names_length);
+
+	if (names_length > 0) {
+		free(names);
+	}
 }
 
 void
@@ -364,6 +406,10 @@ state_set_desktop_viewports(state_t *state)
 			PropModeReplace,
 			(unsigned char *)viewports,
 			viewports_length);
+
+	if (viewports_length > 0) {
+		free(viewports);
+	}
 }
 
 void
