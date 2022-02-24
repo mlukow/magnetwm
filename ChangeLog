@@ -1,3 +1,9 @@
+commit 0462d2eaf5b5d5b18656ed5ea65ca854b8bb2e05
+Author: Marcin Lukow <marcin@nerdy.cat>
+Date:   Thu Feb 24 13:38:22 2022 +0100
+
+    Fixed desktop geometries
+
 commit 3d3f777456c463f20ae1475936d88fd0ed07cf6e
 Author: Marcin Lukow <marcin@nerdy.cat>
 Date:   Thu Feb 24 13:16:37 2022 +0100
