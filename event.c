@@ -6,7 +6,9 @@
 #include "client.h"
 #include "config.h"
 #include "desktop.h"
+#include "ewmh.h"
 #include "group.h"
+#include "icccm.h"
 #include "screen.h"
 #include "state.h"
 
@@ -73,143 +75,31 @@ event_handle_client_message(state_t *state, XClientMessageEvent *event)
 	first = event->data.l[1];
 	second = event->data.l[2];
 
-	if (event->message_type == state->atoms[WM_CHANGE_STATE]) {
+	if (event->message_type == state->icccm->atoms[WM_CHANGE_STATE]) {
 		if (action == IconicState) {
 			client = client_find(state, event->window);
-			if (!client) {
-				return;
+			if (client) {
+				client_hide(state, client);
 			}
-
-			client_hide(state, client);
 		}
-	} else if (event->message_type == state->atoms[_NET_CLOSE_WINDOW]) {
+	} else if (event->message_type == state->ewmh->atoms[_NET_CLOSE_WINDOW]) {
 		client = client_find(state, event->window);
-		if (!client) {
-			return;
+		if (client) {
+			client_close(state, client);
 		}
-
-		client_close(state, client);
-	} else if (event->message_type == state->atoms[_NET_ACTIVE_WINDOW]) {
+	} else if (event->message_type == state->ewmh->atoms[_NET_ACTIVE_WINDOW]) {
 		client = client_find(state, event->window);
-		if (!client) {
-			return;
+		if (client) {
+			client_show(state, client);
 		}
-
-		client_show(state, client);
-	} else if (event->message_type == state->atoms[_NET_WM_DESKTOP]) {
+	} else if (event->message_type == state->ewmh->atoms[_NET_WM_DESKTOP]) {
 		printf("change desktop\n");
-	} else if (event->message_type == state->atoms[_NET_WM_STATE]) {
+	} else if (event->message_type == state->ewmh->atoms[_NET_WM_STATE]) {
 		client = client_find(state, event->window);
-		if (!client) {
-			return;
+		if (client) {
+			ewmh_handle_net_wm_state_message(state, client, action, first, second);
 		}
-
-		if ((first == state->atoms[_NET_WM_STATE_STICKY]) ||
-				(second == state->atoms[_NET_WM_STATE_STICKY])) {
-			if (action == _NET_WM_STATE_ADD) {
-				if (!(client->flags & CLIENT_STICKY)) {
-					client_toggle_sticky(state, client);
-				}
-			} else if (action == _NET_WM_STATE_REMOVE) {
-				if (client->flags & CLIENT_STICKY) {
-					client_toggle_sticky(state, client);
-				}
-			} else if (action == _NET_WM_STATE_TOGGLE) {
-				client_toggle_sticky(state, client);
-			}
-		} else if ((first == state->atoms[_NET_WM_STATE_MAXIMIZED_VERT]) ||
-				(second == state->atoms[_NET_WM_STATE_MAXIMIZED_VERT])) {
-			if (action == _NET_WM_STATE_ADD) {
-				if (!(client->flags & CLIENT_VMAXIMIZED)) {
-					client_toggle_vmaximize(state, client);
-				}
-			} else if (action == _NET_WM_STATE_REMOVE) {
-				if (client->flags & CLIENT_VMAXIMIZED) {
-					client_toggle_vmaximize(state, client);
-				}
-			} else if (action == _NET_WM_STATE_TOGGLE) {
-				client_toggle_vmaximize(state, client);
-			}
-		} else if ((first == state->atoms[_NET_WM_STATE_MAXIMIZED_HORZ]) ||
-				(second == state->atoms[_NET_WM_STATE_MAXIMIZED_HORZ])) {
-			if (action == _NET_WM_STATE_ADD) {
-				if (!(client->flags & CLIENT_HMAXIMIZED)) {
-					client_toggle_hmaximize(state, client);
-				}
-			} else if (action == _NET_WM_STATE_REMOVE) {
-				if (client->flags & CLIENT_HMAXIMIZED) {
-					client_toggle_hmaximize(state, client);
-				}
-			} else if (action == _NET_WM_STATE_TOGGLE) {
-				client_toggle_hmaximize(state, client);
-			}
-		} else if ((first == state->atoms[_NET_WM_STATE_HIDDEN]) ||
-				(second == state->atoms[_NET_WM_STATE_HIDDEN])) {
-			if (action == _NET_WM_STATE_ADD) {
-				if (!(client->flags & CLIENT_HIDDEN)) {
-					client_toggle_hidden(state, client);
-				}
-			} else if (action == _NET_WM_STATE_REMOVE) {
-				if (client->flags & CLIENT_HIDDEN) {
-					client_toggle_hidden(state, client);
-				}
-			} else if (action == _NET_WM_STATE_TOGGLE) {
-				client_toggle_hidden(state, client);
-			}
-		} else if ((first == state->atoms[_NET_WM_STATE_FULLSCREEN]) ||
-				(second == state->atoms[_NET_WM_STATE_FULLSCREEN])) {
-			if (action == _NET_WM_STATE_ADD) {
-				if (!(client->flags & CLIENT_FULLSCREEN)) {
-					client_toggle_fullscreen(state, client);
-				}
-			} else if (action == _NET_WM_STATE_REMOVE) {
-				if (client->flags & CLIENT_FULLSCREEN) {
-					client_toggle_fullscreen(state, client);
-				}
-			} else if (action == _NET_WM_STATE_TOGGLE) {
-				client_toggle_fullscreen(state, client);
-			}
-		} else if ((first == state->atoms[_NET_WM_STATE_DEMANDS_ATTENTION]) ||
-				(second == state->atoms[_NET_WM_STATE_DEMANDS_ATTENTION])) {
-			if (action == _NET_WM_STATE_ADD) {
-				if (!(client->flags & CLIENT_URGENCY)) {
-					client_toggle_urgent(state, client);
-				}
-			} else if (action == _NET_WM_STATE_REMOVE) {
-				if (client->flags & CLIENT_URGENCY) {
-					client_toggle_urgent(state, client);
-				}
-			} else if (action == _NET_WM_STATE_TOGGLE) {
-				client_toggle_urgent(state, client);
-			}
-		} else if ((first == state->atoms[_NET_WM_STATE_SKIP_PAGER]) ||
-				(second == state->atoms[_NET_WM_STATE_SKIP_PAGER])) {
-			if (action == _NET_WM_STATE_ADD) {
-				if (!(client->flags & CLIENT_SKIP_PAGER)) {
-					client_toggle_skip_pager(state, client);
-				}
-			} else if (action == _NET_WM_STATE_REMOVE) {
-				if (client->flags & CLIENT_SKIP_PAGER) {
-					client_toggle_skip_pager(state, client);
-				}
-			} else if (action == _NET_WM_STATE_TOGGLE) {
-				client_toggle_skip_pager(state, client);
-			}
-		} else if ((first == state->atoms[_NET_WM_STATE_SKIP_TASKBAR]) ||
-				(second == state->atoms[_NET_WM_STATE_SKIP_TASKBAR])) {
-			if (action == _NET_WM_STATE_ADD) {
-				if (!(client->flags & CLIENT_SKIP_TASKBAR)) {
-					client_toggle_skip_taskbar(state, client);
-				}
-			} else if (action == _NET_WM_STATE_REMOVE) {
-				if (client->flags & CLIENT_SKIP_TASKBAR) {
-					client_toggle_skip_taskbar(state, client);
-				}
-			} else if (action == _NET_WM_STATE_TOGGLE) {
-				client_toggle_skip_taskbar(state, client);
-			}
-		}
-	} else if (event->message_type == state->atoms[_NET_CURRENT_DESKTOP]) {
+	} else if (event->message_type == state->ewmh->atoms[_NET_CURRENT_DESKTOP]) {
 		desktop_switch_to_index(state, event->data.l[0]);
 	}
 }
@@ -354,32 +244,7 @@ event_handle_property_notify(state_t *state, XPropertyEvent *event)
 		return;
 	}
 
-	switch (event->atom) {
-		case XA_WM_NORMAL_HINTS:
-			client_update_size_hints(state, client);
-			break;
-		case XA_WM_NAME:
-			client_update_wm_name(state, client);
-			break;
-		case XA_WM_HINTS:
-			client_update_wm_hints(state, client);
-			break;
-		case XA_WM_TRANSIENT_FOR:
-			printf("got transient for\n");
-			break;
-		default:
-			if (event->atom == state->atoms[WM_PROTOCOLS]) {
-				client_update_wm_protocols(state, client);
-			}
-			/*
-			for (int i = 0; i < EWMH_NITEMS; i++) {
-				if (event->atom == state->atoms[i]) {
-					printf("found %d\n", i);
-				}
-			}
-			*/
-			break;
-	}
+	icccm_handle_property(state, client, event->atom);
 }
 
 void

@@ -102,9 +102,10 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_magnetwm_OBJECTS = client.$(OBJEXT) config.$(OBJEXT) \
-	desktop.$(OBJEXT) event.$(OBJEXT) functions.$(OBJEXT) \
-	group.$(OBJEXT) main.$(OBJEXT) menu.$(OBJEXT) screen.$(OBJEXT) \
-	state.$(OBJEXT) utils.$(OBJEXT) xutils.$(OBJEXT)
+	desktop.$(OBJEXT) event.$(OBJEXT) ewmh.$(OBJEXT) \
+	functions.$(OBJEXT) group.$(OBJEXT) icccm.$(OBJEXT) \
+	main.$(OBJEXT) menu.$(OBJEXT) screen.$(OBJEXT) state.$(OBJEXT) \
+	utils.$(OBJEXT) xutils.$(OBJEXT)
 magnetwm_OBJECTS = $(am_magnetwm_OBJECTS)
 magnetwm_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -124,10 +125,10 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/client.Po ./$(DEPDIR)/config.Po \
 	./$(DEPDIR)/desktop.Po ./$(DEPDIR)/event.Po \
-	./$(DEPDIR)/functions.Po ./$(DEPDIR)/group.Po \
-	./$(DEPDIR)/main.Po ./$(DEPDIR)/menu.Po ./$(DEPDIR)/screen.Po \
-	./$(DEPDIR)/state.Po ./$(DEPDIR)/utils.Po \
-	./$(DEPDIR)/xutils.Po
+	./$(DEPDIR)/ewmh.Po ./$(DEPDIR)/functions.Po \
+	./$(DEPDIR)/group.Po ./$(DEPDIR)/icccm.Po ./$(DEPDIR)/main.Po \
+	./$(DEPDIR)/menu.Po ./$(DEPDIR)/screen.Po ./$(DEPDIR)/state.Po \
+	./$(DEPDIR)/utils.Po ./$(DEPDIR)/xutils.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -177,9 +178,8 @@ ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
 AM_RECURSIVE_TARGETS = cscope
-am__DIST_COMMON = $(srcdir)/Makefile.in AUTHORS COPYING ChangeLog \
-	INSTALL NEWS README compile config.c depcomp install-sh \
-	missing ylwrap
+am__DIST_COMMON = $(srcdir)/Makefile.in COPYING ChangeLog INSTALL \
+	README compile config.c depcomp install-sh missing ylwrap
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -294,7 +294,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-magnetwm_SOURCES = client.c config.y desktop.c event.c functions.c group.c main.c menu.c screen.c state.c utils.c xutils.c
+magnetwm_SOURCES = client.c config.y desktop.c event.c ewmh.c functions.c group.c icccm.c main.c menu.c screen.c state.c utils.c xutils.c
 CLEANFILES = config.c
 all: all-am
 
@@ -306,15 +306,15 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
-	      echo ' cd $(srcdir) && $(AUTOMAKE) --gnu'; \
-	      $(am__cd) $(srcdir) && $(AUTOMAKE) --gnu \
+	      echo ' cd $(srcdir) && $(AUTOMAKE) --foreign'; \
+	      $(am__cd) $(srcdir) && $(AUTOMAKE) --foreign \
 		&& exit 0; \
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu Makefile
+	  $(AUTOMAKE) --foreign Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -390,8 +390,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/desktop.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/event.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ewmh.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/functions.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/group.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/icccm.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/menu.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/screen.Po@am__quote@ # am--include-marker
@@ -702,8 +704,10 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/config.Po
 	-rm -f ./$(DEPDIR)/desktop.Po
 	-rm -f ./$(DEPDIR)/event.Po
+	-rm -f ./$(DEPDIR)/ewmh.Po
 	-rm -f ./$(DEPDIR)/functions.Po
 	-rm -f ./$(DEPDIR)/group.Po
+	-rm -f ./$(DEPDIR)/icccm.Po
 	-rm -f ./$(DEPDIR)/main.Po
 	-rm -f ./$(DEPDIR)/menu.Po
 	-rm -f ./$(DEPDIR)/screen.Po
@@ -761,8 +765,10 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/config.Po
 	-rm -f ./$(DEPDIR)/desktop.Po
 	-rm -f ./$(DEPDIR)/event.Po
+	-rm -f ./$(DEPDIR)/ewmh.Po
 	-rm -f ./$(DEPDIR)/functions.Po
 	-rm -f ./$(DEPDIR)/group.Po
+	-rm -f ./$(DEPDIR)/icccm.Po
 	-rm -f ./$(DEPDIR)/main.Po
 	-rm -f ./$(DEPDIR)/menu.Po
 	-rm -f ./$(DEPDIR)/screen.Po

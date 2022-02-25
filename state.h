@@ -8,6 +8,8 @@
 #include "queue.h"
 
 struct config_t;
+struct ewmh_t;
+struct icccm_t;
 struct screen_t;
 
 TAILQ_HEAD(screen_q, screen_t);
@@ -31,14 +33,13 @@ typedef struct state_t {
 	int primary_screen;
 	int xrandr_event_base;
 
-	Atom *atoms;
-
 	XftColor *colors;
 	XftFont **fonts;
 	Cursor cursors[CURSOR_NITEMS];
 
 	struct config_t *config;
-
+	struct ewmh_t *ewmh;
+	struct icccm_t *icccm;
 	struct screen_q screens;
 } state_t;
 

@@ -2,25 +2,20 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <X11/Xatom.h>
 #include <X11/Xutil.h>
 
 #include "client.h"
 #include "config.h"
 #include "desktop.h"
+#include "ewmh.h"
 #include "group.h"
+#include "icccm.h"
 #include "screen.h"
 #include "state.h"
 #include "utils.h"
 #include "xutils.h"
 
 void client_configure(state_t *, client_t *);
-Atom *client_get_wm_state(state_t *, client_t *, int *);
-void client_restore_net_wm_state(state_t *, client_t *);
-void client_send_message(state_t *, client_t *, Atom, Time);
-void client_set_net_active_window(state_t *, client_t *);
-void client_set_net_wm_state(state_t *, client_t *);
-void client_set_wm_state(state_t *, client_t *, long);
 void client_update_class(state_t *, client_t *);
 
 void
@@ -39,7 +34,7 @@ client_activate(state_t *state, client_t *client)
 	}
 
 	if (client->flags & CLIENT_WM_TAKE_FOCUS) {
-		client_send_message(state, client, state->atoms[WM_TAKE_FOCUS], CurrentTime);
+		icccm_take_focus(state, client);
 	}
 
 	TAILQ_REMOVE(&client->group->clients, client, entry);
@@ -49,14 +44,14 @@ client_activate(state_t *state, client_t *client)
 	client->flags &= ~CLIENT_URGENCY;
 
 	client_draw_border(state, client);
-	client_set_net_active_window(state, client);
+	ewmh_set_net_active_window(state, client);
 }
 
 void
 client_close(state_t *state, client_t *client)
 {
 	if (client->flags & CLIENT_WM_DELETE_WINDOW) {
-		client_send_message(state, client, state->atoms[WM_DELETE_WINDOW], CurrentTime);
+		icccm_delete_window(state, client);
 	} else {
 		XKillClient(state->display, client->window);
 	}
@@ -92,7 +87,7 @@ client_deactivate(state_t *state, client_t *client)
 	client->flags &= ~CLIENT_ACTIVE;
 
 	client_draw_border(state, client);
-	client_set_net_active_window(state, NULL);
+	ewmh_set_net_active_window(state, client);
 }
 
 void
@@ -180,22 +175,6 @@ client_free(client_t *client)
 	free(client);
 }
 
-Atom *
-client_get_wm_state(state_t *state, client_t *client, int *count)
-{
-	Atom *wm_state;
-	unsigned char *output;
-	if ((*count = x_get_property(state->display, client->window, state->atoms[_NET_WM_STATE], XA_ATOM, 64L, &output)) <= 0) {
-		return NULL;
-	}
-
-	wm_state = calloc(*count, sizeof(Atom));
-	(void)memcpy(wm_state, output, *count * sizeof(Atom));
-	XFree(output);
-
-	return wm_state;
-}
-
 void
 client_hide(state_t *state, client_t *client)
 {
@@ -203,11 +182,11 @@ client_hide(state_t *state, client_t *client)
 
 	if (client->flags & CLIENT_ACTIVE) {
 		client->flags &= ~CLIENT_ACTIVE;
-		client_set_net_active_window(state, NULL);
+		ewmh_set_net_active_window(state, client);
 	}
 
 	client->flags |= CLIENT_HIDDEN;
-	client_set_wm_state(state, client, IconicState);
+	ewmh_set_net_wm_state(state, client);
 }
 
 client_t *
@@ -258,19 +237,20 @@ client_init(state_t *state, Window window, Bool initial)
 
 	client_update_class(state, client);
 	client_update_wm_name(state, client);
-	client_update_wm_protocols(state, client);
 	client_update_size_hints(state, client);
 	client_update_wm_hints(state, client);
 
+	icccm_restore_wm_protocols(state, client);
+
 	if (attributes.map_state != IsViewable) {
 		if (client->initial_state) {
-			client_set_wm_state(state, client, client->initial_state);
+			icccm_set_wm_state(state, client, client->initial_state);
 		}
 	}
 
 	screen_adopt(state, screen, client);
 
-	client_restore_net_wm_state(state, client);
+	ewmh_restore_net_wm_state(state, client);
 
 	TAILQ_FOREACH(ignored, &state->config->ignored, entry) {
 		if (!strcmp(ignored->class_name, client->class_name)) {
@@ -302,7 +282,7 @@ client_move_resize(state_t *state, client_t *client, Bool reset)
 {
 	if (reset) {
 		client->flags &= ~CLIENT_MAXIMIZED;
-		client_set_net_wm_state(state, client);
+		ewmh_set_net_wm_state(state, client);
 	}
 
 	XMoveResizeWindow(
@@ -361,7 +341,7 @@ client_remove(state_t *state, client_t *client)
 	*/
 
 	if (client->flags & CLIENT_ACTIVE) {
-		client_set_net_active_window(state, None);
+		ewmh_set_net_active_window(state, client);
 	}
 
 	group = client->group;
@@ -401,165 +381,8 @@ client_restore(state_t *state, client_t *client)
 		client->geometry = client->geometry_saved;
 
 		client_move_resize(state, client, False);
-		client_set_net_wm_state(state, client);
+		ewmh_set_net_wm_state(state, client);
 	}
-}
-
-void
-client_restore_net_wm_state(state_t *state, client_t *client)
-{
-	Atom *atoms;
-	int count, i;
-
-	atoms = client_get_wm_state(state, client, &count);
-	for (i = 0; i < count; i++) {
-		if (atoms[i] == state->atoms[_NET_WM_STATE_STICKY]) {
-			client_toggle_sticky(state, client);
-		} else if (atoms[i] == state->atoms[_NET_WM_STATE_MAXIMIZED_VERT]) {
-			client_toggle_vmaximize(state, client);
-		} else if (atoms[i] == state->atoms[_NET_WM_STATE_MAXIMIZED_HORZ]) {
-			client_toggle_hmaximize(state, client);
-		} else if (atoms[i] == state->atoms[_NET_WM_STATE_HIDDEN]) {
-			client_toggle_hidden(state, client);
-		} else if (atoms[i] == state->atoms[_NET_WM_STATE_FULLSCREEN]) {
-			client_toggle_fullscreen(state, client);
-		} else if (atoms[i] == state->atoms[_NET_WM_STATE_DEMANDS_ATTENTION]) {
-			client_toggle_urgent(state, client);
-		} else if (atoms[i] == state->atoms[_NET_WM_STATE_SKIP_PAGER]) {
-			client_toggle_skip_pager(state, client);
-		} else if (atoms[i] == state->atoms[_NET_WM_STATE_SKIP_TASKBAR]) {
-			client_toggle_skip_taskbar(state, client);
-		}
-	}
-
-	free(atoms);
-}
-
-void
-client_send_message(state_t *state, client_t *client, Atom atom, Time time)
-{
-	XClientMessageEvent event;
-
-	(void)memset(&event, 0, sizeof(XClientMessageEvent));
-	event.type = ClientMessage;
-	event.window = client->window;
-	event.message_type = state->atoms[WM_PROTOCOLS];
-	event.format = 32;
-	event.data.l[0] = atom;
-	event.data.l[1] = time;
-
-	XSendEvent(state->display, client->window, False, NoEventMask, (XEvent *)&event);
-}
-
-void
-client_set_net_active_window(state_t *state, client_t *client)
-{
-	Window window;
-
-	if (client) {
-		window = client->window;
-	} else {
-		window = None;
-	}
-
-	XChangeProperty(
-			state->display,
-			state->root,
-			state->atoms[_NET_ACTIVE_WINDOW],
-			XA_WINDOW,
-			32,
-			PropModeReplace,
-			(unsigned char *)&window,
-			1);
-}
-
-void
-client_set_net_wm_state(state_t *state, client_t *client)
-{
-	Atom *input, *output;
-	int count, i, j;
-
-	input = client_get_wm_state(state, client, &count);
-	output = calloc(count + 9, sizeof(Atom));
-
-	for (i = j = 0; i < count; i++) {
-		if ((input[i] != state->atoms[_NET_WM_STATE_STICKY]) &&
-			(input[i] != state->atoms[_NET_WM_STATE_MAXIMIZED_VERT]) &&
-			(input[i] != state->atoms[_NET_WM_STATE_MAXIMIZED_HORZ]) &&
-			(input[i] != state->atoms[_NET_WM_STATE_HIDDEN]) &&
-			(input[i] != state->atoms[_NET_WM_STATE_FULLSCREEN]) &&
-			(input[i] != state->atoms[_NET_WM_STATE_DEMANDS_ATTENTION]) &&
-			(input[i] != state->atoms[_NET_WM_STATE_SKIP_PAGER]) &&
-			(input[i] != state->atoms[_NET_WM_STATE_SKIP_TASKBAR])) {
-			output[j++] = input[i];
-		}
-	}
-
-	free(input);
-
-	if (client->flags & CLIENT_STICKY) {
-		output[j++] = state->atoms[_NET_WM_STATE_STICKY];
-	}
-
-	if (client->flags & CLIENT_HIDDEN) {
-		output[j++] = state->atoms[_NET_WM_STATE_HIDDEN];
-	}
-
-	if (client->flags & CLIENT_FULLSCREEN) {
-		output[j++] = state->atoms[_NET_WM_STATE_FULLSCREEN];
-	} else {
-		if (client->flags & CLIENT_VMAXIMIZED) {
-			output[j++] = state->atoms[_NET_WM_STATE_MAXIMIZED_VERT];
-		}
-
-		if (client->flags & CLIENT_HMAXIMIZED) {
-			output[j++] = state->atoms[_NET_WM_STATE_MAXIMIZED_HORZ];
-		}
-	}
-
-	if (client->flags & CLIENT_URGENCY) {
-		output[j++] = state->atoms[_NET_WM_STATE_DEMANDS_ATTENTION];
-	}
-
-	if (client->flags & CLIENT_SKIP_PAGER) {
-		output[j++] = state->atoms[_NET_WM_STATE_SKIP_PAGER];
-	}
-
-	if (client->flags & CLIENT_SKIP_TASKBAR) {
-		output[j++] = state->atoms[_NET_WM_STATE_SKIP_TASKBAR];
-	}
-
-	if (j > 0) {
-		XChangeProperty(
-				state->display,
-				client->window,
-				state->atoms[_NET_WM_STATE],
-				XA_ATOM,
-				32,
-				PropModeReplace,
-				(unsigned char *)output,
-				j);
-	} else {
-		XDeleteProperty(state->display, client->window, state->atoms[_NET_WM_STATE]);
-	}
-
-	free(output);
-}
-
-void
-client_set_wm_state(state_t *state, client_t *client, long wm_state)
-{
-	long data[] = { wm_state, None };
-
-	XChangeProperty(
-			state->display,
-			client->window,
-			state->atoms[WM_STATE],
-			state->atoms[WM_STATE],
-			32,
-			PropModeReplace,
-			(unsigned char *)data,
-			2);
 }
 
 void
@@ -568,7 +391,7 @@ client_show(state_t *state, client_t *client)
 	XMapWindow(state->display, client->window);
 
 	client->flags &= ~CLIENT_HIDDEN;
-	client_set_wm_state(state, client, NormalState);
+	icccm_set_wm_state(state, client, NormalState);
 	client_draw_border(state, client);
 }
 
@@ -580,7 +403,7 @@ client_toggle_freeze(state_t *state, client_t *client)
 	}
 
 	client->flags ^= CLIENT_FREEZE;
-	client_set_net_wm_state(state, client);
+	ewmh_set_net_wm_state(state, client);
 }
 
 void
@@ -605,14 +428,14 @@ client_toggle_fullscreen(state_t *state, client_t *client)
 	}
 
 	client_move_resize(state, client, False);
-	client_set_net_wm_state(state, client);
+	ewmh_set_net_wm_state(state, client);
 }
 
 void
 client_toggle_hidden(state_t *state, client_t *client)
 {
 	client->flags ^= CLIENT_HIDDEN;
-	client_set_net_wm_state(state, client);
+	ewmh_set_net_wm_state(state, client);
 }
 
 void
@@ -629,7 +452,7 @@ client_toggle_hmaximize(state_t *state, client_t *client)
 	client->geometry.width = screen->geometry.width - 2 * client->border_width;
 
 	client_move_resize(state, client, False);
-	client_set_net_wm_state(state, client);
+	ewmh_set_net_wm_state(state, client);
 }
 
 void
@@ -660,28 +483,28 @@ client_toggle_maximize(state_t *state, client_t *client)
 	}
 
 	client_move_resize(state, client, False);
-	client_set_net_wm_state(state, client);
+	ewmh_set_net_wm_state(state, client);
 }
 
 void
 client_toggle_skip_pager(state_t *state, client_t *client)
 {
 	client->flags ^= CLIENT_SKIP_PAGER;
-	client_set_net_wm_state(state, client);
+	ewmh_set_net_wm_state(state, client);
 }
 
 void
 client_toggle_skip_taskbar(state_t *state, client_t *client)
 {
 	client->flags ^= CLIENT_SKIP_TASKBAR;
-	client_set_net_wm_state(state, client);
+	ewmh_set_net_wm_state(state, client);
 }
 
 void
 client_toggle_sticky(state_t *state, client_t *client)
 {
 	client->flags ^= CLIENT_STICKY;
-	client_set_net_wm_state(state, client);
+	ewmh_set_net_wm_state(state, client);
 }
 
 void
@@ -706,7 +529,7 @@ client_toggle_vmaximize(state_t *state, client_t *client)
 	client->geometry.width = screen->geometry.height - 2 * client->border_width;
 
 	client_move_resize(state, client, False);
-	client_set_net_wm_state(state, client);
+	ewmh_set_net_wm_state(state, client);
 }
 
 void
@@ -808,37 +631,22 @@ client_update_wm_name(state_t *state, client_t *client)
 {
 	XTextProperty text;
 
-	if (XGetTextProperty(state->display, client->window, &text, state->atoms[_NET_WM_NAME]) != Success) {
+	/*
+	if (XGetTextProperty(state->display, client->window, &text, state->icccm[_NET_WM_NAME]) != Success) {
 		if (!XGetWMName(state->display, client->window, &text)) {
 			return;
 		}
 	}
 
 	if (text.nitems == 0) {
+	*/
 		if (!XGetWMName(state->display, client->window, &text)) {
 			return;
 		}
+		/*
 	}
+	*/
 
 	client->name = strdup((char *)text.value);
 	XFree(text.value);
-}
-
-void
-client_update_wm_protocols(state_t *state, client_t *client)
-{
-	Atom *protocols;
-	int count, i;
-
-	if (!XGetWMProtocols(state->display, client->window, &protocols, &count)) {
-		return;
-	}
-
-	for (i = 0; i < count; i++) {
-		if (protocols[i] == state->atoms[WM_DELETE_WINDOW]) {
-			client->flags |= CLIENT_WM_DELETE_WINDOW;
-		} else if (protocols[i] == state->atoms[WM_TAKE_FOCUS]) {
-			client->flags |= CLIENT_WM_TAKE_FOCUS;
-		}
-	}
 }

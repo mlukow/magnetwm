@@ -3,12 +3,13 @@
 #include <string.h>
 
 #include <X11/extensions/Xrandr.h>
-#include <X11/Xatom.h>
 
 #include "client.h"
 #include "config.h"
 #include "desktop.h"
+#include "ewmh.h"
 #include "group.h"
+#include "icccm.h"
 #include "screen.h"
 #include "state.h"
 #include "utils.h"
@@ -16,13 +17,6 @@
 
 void state_bind(state_t *);
 int state_error_handler(Display *, XErrorEvent *);
-Bool state_init_atoms(state_t *);
-void state_set_current_desktop(state_t *);
-void state_set_desktop_geometries(state_t *);
-void state_set_desktop_names(state_t *);
-void state_set_desktop_viewports(state_t *);
-void state_set_net_supported(state_t *);
-void state_set_number_of_desktops(state_t *);
 Bool state_update_clients(state_t *);
 Bool state_update_screens(state_t *);
 
@@ -105,6 +99,8 @@ state_free(state_t *state)
 	XCloseDisplay(state->display);
 
 	config_free(state->config);
+	ewmh_free(state->ewmh);
+	icccm_free(state->icccm);
 
 	free(state);
 }
@@ -124,10 +120,8 @@ state_init(char *display_name, char *config_path)
 		return NULL;
 	}
 
-	if (!state_init_atoms(state)) {
-		free(state);
-		return NULL;
-	}
+	state->ewmh = ewmh_init(state);
+	state->icccm = icccm_init(state);
 
 	state->primary_screen = DefaultScreen(state->display);
 	state->colormap = DefaultColormap(state->display, state->primary_screen);
@@ -177,7 +171,7 @@ state_init(char *display_name, char *config_path)
 		return False;
 	}
 
-	state_set_net_supported(state);
+	ewmh_set_net_supported(state);
 
 	if (!state_update_screens(state)) {
 		state_free(state);
@@ -189,11 +183,11 @@ state_init(char *display_name, char *config_path)
 		return NULL;
 	}
 
-	state_set_number_of_desktops(state);
-	state_set_desktop_geometries(state);
-	state_set_desktop_names(state);
-	state_set_desktop_viewports(state);
-	state_set_current_desktop(state);
+	ewmh_set_net_number_of_desktops(state);
+	ewmh_set_net_desktop_geometry(state);
+	ewmh_set_net_desktop_names(state);
+	ewmh_set_net_desktop_viewport(state);
+	ewmh_set_net_current_desktop(state);
 
 	attributes.cursor = state->cursors[CURSOR_NORMAL];
 	attributes.event_mask =
@@ -211,268 +205,6 @@ state_init(char *display_name, char *config_path)
 	XSetErrorHandler(state_error_handler);
 
 	return state;
-}
-
-Bool
-state_init_atoms(state_t *state)
-{
-	char *names[] = {
-	 	"WM_STATE",
-	 	"WM_DELETE_WINDOW",
-		"WM_TAKE_FOCUS",
-		"WM_PROTOCOLS",
-		"UTF8_STRING",
-		"WM_CHANGE_STATE",
-		"_NET_SUPPORTED",
-		"_NET_CLIENT_LIST",
-		"_NET_CLIENT_LIST_STACKING",
-		"_NET_NUMBER_OF_DESKTOPS",
-		"_NET_DESKTOP_GEOMETRY",
-		"_NET_DESKTOP_VIEWPORT",
-		"_NET_CURRENT_DESKTOP",
-		"_NET_DESKTOP_NAMES",
-		"_NET_ACTIVE_WINDOW",
-		"_NET_WORKAREA",
-		"_NET_SUPPORTING_WM_CHECK",
-		"_NET_VIRTUAL_ROOTS",
-		"_NET_DESKTOP_LAYOUT",
-		"_NET_SHOWING_DESKTOP",
-		"_NET_WM_NAME",
-		"_NET_WM_VISIBLE_NAME",
-		"_NET_WM_ICON_NAME",
-		"_NET_WM_VISIBLE_ICON_NAME",
-		"_NET_WM_DESKTOP",
-		"_NET_CLOSE_WINDOW",
-		"_NET_WM_WINDOW_TYPE",
-		"_NET_WM_STATE",
-		"_NET_WM_ALLOWED_ACTIONS",
-		"_NET_WM_STRUT",
-		"_NET_WM_STRUT_PARTIAL",
-		"_NET_WM_ICON_GEOMETRY",
-		"_NET_WM_ICON",
-		"_NET_WM_PID",
-		"_NET_WM_HANDLED_ICONS",
-		"_NET_WM_USER_TIME",
-		"_NET_WM_USER_TIME_WINDOW",
-		"_NET_FRAME_EXTENTS",
-		"_NET_WM_OPAQUE_REGION",
-		"_NET_WM_BYPASS_COMPOSITOR",
-		"_NET_WM_STATE_STICKY",
-		"_NET_WM_STATE_MAXIMIZED_VERT",
-		"_NET_WM_STATE_MAXIMIZED_HORZ",
-		"_NET_WM_STATE_HIDDEN",
-		"_NET_WM_STATE_FULLSCREEN",
-		"_NET_WM_STATE_DEMANDS_ATTENTION",
-		"_NET_WM_STATE_SKIP_PAGER",
-		"_NET_WM_STATE_SKIP_TASKBAR",
-	};
-
-	state->atoms = calloc(48, sizeof(Atom));
-	if (!XInternAtoms(state->display, names, 48, False, state->atoms)) {
-		free(state->atoms);
-		return False;
-	}
-
-	return True;
-}
-
-void
-state_set_current_desktop(state_t *state)
-{
-	int index = 0;
-	screen_t *screen;
-
-	TAILQ_FOREACH(screen, &state->screens, entry) {
-		if (screen->active) {
-			index += screen->desktop_index;
-			break;
-		} else {
-			index += screen->desktop_count;
-		}
-	}
-
-	XChangeProperty(
-			state->display,
-			state->root,
-			state->atoms[_NET_CURRENT_DESKTOP],
-			XA_CARDINAL,
-			32,
-			PropModeReplace,
-			(unsigned char *)&index,
-			1);
-}
-
-void
-state_set_desktop_geometries(state_t *state)
-{
-	int i, geometries_length = 0;
-	long *geometries;
-	screen_t *screen;
-
-	TAILQ_FOREACH(screen, &state->screens, entry) {
-		if (geometries_length == 0) {
-			geometries = calloc(2 * screen->desktop_count, sizeof(long));
-		} else {
-			geometries = realloc(geometries, (geometries_length + 2 * screen->desktop_count) * sizeof(long));
-		}
-
-		for (i = 0; i < screen->desktop_count; i++) {
-			geometries[geometries_length + 2 * i] = screen->geometry.width;
-			geometries[geometries_length + 2 * i + 1] = screen->geometry.height;
-		}
-		geometries_length += 2 * screen->desktop_count;
-	}
-
-	XChangeProperty(
-			state->display,
-			state->root,
-			state->atoms[_NET_DESKTOP_VIEWPORT],
-			XA_CARDINAL,
-			32,
-			PropModeReplace,
-			(unsigned char *)geometries,
-			geometries_length);
-
-	if (geometries_length > 0) {
-		free(geometries);
-	}
-}
-
-void
-state_set_desktop_names(state_t *state)
-{
-	char *names = NULL;
-	int i, names_length = 0;
-	screen_t *screen;
-	ssize_t name_length;
-
-	TAILQ_FOREACH(screen, &state->screens, entry) {
-		for (i = 0; i < screen->desktop_count; i++) {
-			name_length = strlen(screen->desktops[i]->name);
-			if (names_length == 0) {
-				names = calloc(name_length + 1, sizeof(char));
-			} else {
-				names = realloc(names, (names_length + name_length + 1) * sizeof(char));
-			}
-
-			memcpy(names + names_length, screen->desktops[i]->name, name_length);
-			names_length += name_length;
-			names[names_length++] = '\0';
-		}
-	}
-
-	XChangeProperty(
-			state->display,
-			state->root,
-			state->atoms[_NET_DESKTOP_NAMES],
-			state->atoms[UTF8_STRING],
-			8,
-			PropModeReplace,
-			(unsigned char *)names,
-			names_length);
-
-	if (names_length > 0) {
-		free(names);
-	}
-}
-
-void
-state_set_desktop_viewports(state_t *state)
-{
-	int i, viewports_length = 0;
-	long *viewports;
-	screen_t *screen;
-
-	TAILQ_FOREACH(screen, &state->screens, entry) {
-		if (viewports_length == 0) {
-			viewports = calloc(2 * screen->desktop_count, sizeof(long));
-		} else {
-			viewports = realloc(viewports, (viewports_length + 2 * screen->desktop_count) * sizeof(long));
-		}
-
-		for (i = 0; i < screen->desktop_count; i++) {
-			viewports[viewports_length + 2 * i] = screen->geometry.x;
-			viewports[viewports_length + 2 * i + 1] = screen->geometry.y;
-		}
-		viewports_length += 2 * screen->desktop_count;
-	}
-
-	XChangeProperty(
-			state->display,
-			state->root,
-			state->atoms[_NET_DESKTOP_VIEWPORT],
-			XA_CARDINAL,
-			32,
-			PropModeReplace,
-			(unsigned char *)viewports,
-			viewports_length);
-
-	if (viewports_length > 0) {
-		free(viewports);
-	}
-}
-
-void
-state_set_net_supported(state_t *state)
-{
-	Atom supported[] = {
-		state->atoms[_NET_SUPPORTED],
-		state->atoms[_NET_SUPPORTING_WM_CHECK],
-		state->atoms[_NET_ACTIVE_WINDOW],
-		state->atoms[_NET_CLIENT_LIST],
-		state->atoms[_NET_CLIENT_LIST_STACKING],
-		state->atoms[_NET_NUMBER_OF_DESKTOPS],
-		state->atoms[_NET_CURRENT_DESKTOP],
-		state->atoms[_NET_DESKTOP_VIEWPORT],
-		state->atoms[_NET_DESKTOP_GEOMETRY],
-		state->atoms[_NET_VIRTUAL_ROOTS],
-		state->atoms[_NET_SHOWING_DESKTOP],
-		state->atoms[_NET_DESKTOP_NAMES],
-		state->atoms[_NET_WORKAREA],
-		state->atoms[_NET_WM_NAME],
-		state->atoms[_NET_WM_DESKTOP],
-		state->atoms[_NET_CLOSE_WINDOW],
-		state->atoms[_NET_WM_STATE],
-		state->atoms[_NET_WM_STATE_STICKY],
-		state->atoms[_NET_WM_STATE_MAXIMIZED_VERT],
-		state->atoms[_NET_WM_STATE_MAXIMIZED_HORZ],
-		state->atoms[_NET_WM_STATE_HIDDEN],
-		state->atoms[_NET_WM_STATE_FULLSCREEN],
-		state->atoms[_NET_WM_STATE_DEMANDS_ATTENTION],
-		state->atoms[_NET_WM_STATE_SKIP_PAGER],
-		state->atoms[_NET_WM_STATE_SKIP_TASKBAR]
-	};
-
-	XChangeProperty(
-			state->display,
-			state->root,
-			state->atoms[_NET_SUPPORTED],
-			XA_ATOM,
-			32,
-			PropModeReplace,
-			(unsigned char *)supported,
-			26);
-}
-
-void
-state_set_number_of_desktops(state_t *state)
-{
-	int count = 0;
-	screen_t *screen;
-
-	TAILQ_FOREACH(screen, &state->screens, entry) {
-		count += screen->desktop_count;
-	}
-
-	XChangeProperty(
-			state->display,
-			state->root,
-			state->atoms[_NET_NUMBER_OF_DESKTOPS],
-			XA_CARDINAL,
-			32,
-			PropModeReplace,
-			(unsigned char *)&count,
-			1);
 }
 
 Bool

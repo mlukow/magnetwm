@@ -1,8 +1,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <X11/Xatom.h>
-
 #include "client.h"
 #include "group.h"
 #include "queue.h"
@@ -84,6 +82,22 @@ x_get_property(Display *display, Window window, Atom atom, Atom type, long lengt
 	}
 
 	return count;
+}
+
+void
+x_send_message(Display *display, Window window, Atom type, Atom data, Time time)
+{
+	XClientMessageEvent event;
+
+	(void)memset(&event, 0, sizeof(XClientMessageEvent));
+	event.type = ClientMessage;
+	event.window = window;
+	event.message_type = type;
+	event.format = 32;
+	event.data.l[0] = data;
+	event.data.l[1] = time;
+
+	XSendEvent(display, window, False, NoEventMask, (XEvent *)&event);
 }
 
 /*

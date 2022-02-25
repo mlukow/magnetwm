@@ -1,10 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <X11/Xatom.h>
-
 #include "client.h"
 #include "desktop.h"
+#include "ewmh.h"
 #include "group.h"
 #include "screen.h"
 #include "state.h"
@@ -74,15 +73,7 @@ desktop_switch_to_index(state_t *state, unsigned int index)
 
 			screen->desktop_index = index - desktop_count;
 
-			XChangeProperty(
-					state->display,
-					state->root,
-					state->atoms[_NET_CURRENT_DESKTOP],
-					XA_CARDINAL,
-					32,
-					PropModeReplace,
-					(unsigned char *)&index,
-					1);
+			ewmh_set_net_current_desktop_index(state, index);
 
 			return;
 		}
