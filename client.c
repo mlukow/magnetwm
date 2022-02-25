@@ -186,7 +186,7 @@ client_hide(state_t *state, client_t *client)
 	}
 
 	client->flags |= CLIENT_HIDDEN;
-	ewmh_set_net_wm_state(state, client);
+	icccm_set_wm_state(state, client, IconicState);
 }
 
 client_t *
