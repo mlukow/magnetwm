@@ -427,6 +427,7 @@ client_toggle_fullscreen(state_t *state, client_t *client)
 		client->flags |= (CLIENT_FULLSCREEN | CLIENT_FREEZE);
 	}
 
+	client_draw_border(state, client);
 	client_move_resize(state, client, False);
 	ewmh_set_net_wm_state(state, client);
 }
@@ -620,9 +621,6 @@ client_update_wm_hints(state_t *state, client_t *client)
 		client->initial_state = hints->initial_state;
 	}
 
-	client->icon = hints->icon_pixmap;
-	client->mask = hints->icon_mask;
-
 	XFree(hints);
 }
 
@@ -632,21 +630,29 @@ client_update_wm_name(state_t *state, client_t *client)
 	XTextProperty text;
 
 	/*
-	if (XGetTextProperty(state->display, client->window, &text, state->icccm[_NET_WM_NAME]) != Success) {
+	if (XGetTextProperty(state->display, client->window, &text, state->icccm->atoms[_NET_WM_NAME]) != Success) {
 		if (!XGetWMName(state->display, client->window, &text)) {
 			return;
 		}
 	}
 
 	if (text.nitems == 0) {
-	*/
 		if (!XGetWMName(state->display, client->window, &text)) {
 			return;
 		}
-		/*
 	}
 	*/
+	if (!XGetWMName(state->display, client->window, &text)) {
+		return;
+	}
 
 	client->name = strdup((char *)text.value);
+
+	if (client->group) {
+		if (!client->group->name || !strlen(client->group->name)) {
+			client->group->name = strdup((char *)text.value);
+		}
+	}
+
 	XFree(text.value);
 }

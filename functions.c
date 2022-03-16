@@ -30,13 +30,13 @@ function_group_cycle(state_t *state, void *context, long flag)
 	screen_t *screen = (screen_t *)context;
 
 	desktop = screen->desktops[screen->desktop_index];
-	menu = menu_init(state, screen, NULL);
+	menu = menu_init(state, screen, NULL, True);
 
 	TAILQ_FOREACH_REVERSE(group, &desktop->groups, group_q, entry) {
-		menu_add(menu, group, 0, group->name, group->icon, group->mask);
+		menu_add(menu, group, 0, group->name);
 	}
 
-	group = (group_t *)menu_cycle(menu);
+	group = (group_t *)menu_filter(menu);
 
 	if (group) {
 		current = TAILQ_LAST(&desktop->groups, group_q);
@@ -55,10 +55,10 @@ function_menu_command(state_t *state, void *context, long flag)
 	menu_t *menu;
 	screen_t *screen = (screen_t *)context;
 
-	menu = menu_init(state, screen, NULL);
+	menu = menu_init(state, screen, NULL, False);
 
 	TAILQ_FOREACH(command, &state->config->commands, entry) {
-		menu_add(menu, command, 1, command->name, None, None);
+		menu_add(menu, command, 1, command->name);
 	}
 
 	command = (command_t *)menu_filter(menu);
@@ -81,7 +81,7 @@ function_menu_exec(state_t *state, void *context, long flag)
 	struct dirent *dp;
 	struct stat sb;
 
-	menu = menu_init(state, screen, "Run");
+	menu = menu_init(state, screen, "Run", False);
 
 	paths = getenv("PATH");
 	if (!paths) {
@@ -116,7 +116,7 @@ function_menu_exec(state_t *state, void *context, long flag)
 			}
 
 			if (access(tpath, X_OK) == 0) {
-				menu_add(menu, dp, 1, dp->d_name, None, None);
+				menu_add(menu, dp, 1, dp->d_name);
 			}
 		}
 
@@ -168,6 +168,14 @@ function_window_center(struct state_t *state, void *context, long flag)
 	client->geometry = geometry;
 
 	client_move_resize(state, client, False);
+}
+
+void
+function_window_close(struct state_t *state, void *context, long flag)
+{
+	client_t *client = (client_t *)context;
+
+	client_close(state, client);
 }
 
 void

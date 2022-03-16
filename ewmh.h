@@ -17,6 +17,7 @@ enum _ewmh_t {
 	_NET_SUPPORTED,
 	_NET_SUPPORTING_WM_CHECK,
 	_NET_WM_DESKTOP,
+	_NET_WM_ICON,
 	_NET_WM_NAME,
 
 	_NET_WM_STATE,
@@ -57,6 +58,7 @@ void ewmh_free(ewmh_t *);
 Bool ewmh_get_net_wm_desktop(struct state_t *, struct client_t *, long *);
 Atom *ewmh_get_net_wm_state(struct state_t *, struct client_t *, int *);
 void ewmh_handle_net_wm_state_message(struct state_t *, struct client_t *, int, Atom, Atom);
+void ewmh_handle_property(struct state_t *, struct client_t *, Atom);
 ewmh_t *ewmh_init(struct state_t *);
 void ewmh_restore_net_wm_state(struct state_t *, struct client_t *);
 void ewmh_set_net_active_window(struct state_t *, struct client_t *);

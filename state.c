@@ -254,7 +254,7 @@ state_update_screens(state_t *state)
 
 	for (i = 0; i < resources->noutput; i++) {
 		output = XRRGetOutputInfo(state->display, resources, resources->outputs[i]);
-		if ((!output) || (output->connection != RR_Connected)) {
+		if ((!output) || (output->connection != RR_Connected) || (output->crtc == None)) {
 			continue;
 		}
 

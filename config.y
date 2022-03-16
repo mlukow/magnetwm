@@ -61,6 +61,7 @@ static const struct {
 	{ FUNC_SC(menu-command, menu_command, 0) },
 	{ FUNC_GC(terminal, terminal, 0) },
 	{ FUNC_CC(window-center, window_center, 0) },
+	{ FUNC_CC(window-close, window_close, 0) },
 	{ FUNC_CC(window-cycle, window_cycle, 0) },
 	{ FUNC_CC(window-fullscreen, window_fullscreen, 0) },
 	{ FUNC_CC(window-maximize, window_maximize, 0) },

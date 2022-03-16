@@ -28,17 +28,15 @@
 		ButtonMotionMask	|	\
 		StructureNotifyMask)
 
-int menu_calculate_entry(menu_t *, int, int, Bool);
-void menu_draw_horizontal(menu_t *);
-void menu_draw_selection_horizontal(menu_t *, int);
-void menu_draw_selection_vertical(menu_t *, int);
-void menu_draw_vertical(menu_t *);
+int menu_calculate_entry(menu_t *, int, int);
+void menu_draw_selection(menu_t *, int);
+void menu_draw(menu_t *);
 int menu_filter_add(menu_t *, char *);
 int menu_filter_complete(menu_t *);
 int menu_filter_delete(menu_t *);
 void menu_filter_update(menu_t *);
-int menu_handle_key(menu_t *, XKeyEvent *, Bool);
-Bool menu_handle_move(menu_t *, int, int, Bool);
+int menu_handle_key(menu_t *, XKeyEvent *);
+Bool menu_handle_move(menu_t *, int, int);
 int menu_handle_release(menu_t *, int, int);
 int menu_move_down(menu_t *);
 int menu_move_left(menu_t *);
@@ -46,7 +44,7 @@ int menu_move_right(menu_t *);
 int menu_move_up(menu_t *);
 
 void
-menu_add(menu_t *menu, void *context, Bool sorted, char *text, Pixmap icon, Pixmap mask)
+menu_add(menu_t *menu, void *context, Bool sorted, char *text)
 {
 	int cmp;
 	menu_item_t *current, *item;
@@ -54,8 +52,6 @@ menu_add(menu_t *menu, void *context, Bool sorted, char *text, Pixmap icon, Pixm
 	item = malloc(sizeof(menu_item_t));
 	item->context = context;
 	item->text = strdup(text);
-	item->icon = icon;
-	item->mask = mask;
 
 	if (sorted) {
 		TAILQ_FOREACH(current, &menu->items, item) {
@@ -75,7 +71,7 @@ menu_add(menu_t *menu, void *context, Bool sorted, char *text, Pixmap icon, Pixm
 }
 
 int
-menu_calculate_entry(menu_t *menu, int x, int y, Bool cycle)
+menu_calculate_entry(menu_t *menu, int x, int y)
 {
 	if ((x < menu->geometry.x) || (x > menu->geometry.x + menu->geometry.width)) {
 		return -1;
@@ -83,15 +79,6 @@ menu_calculate_entry(menu_t *menu, int x, int y, Bool cycle)
 
 	if ((y < menu->geometry.y) || (y > menu->geometry.y + menu->geometry.height)) {
 		return -1;
-	}
-
-	if (cycle) {
-		x -= menu->geometry.x + menu->border_width;
-		if ((x < 0) || (x > menu->geometry.width)) {
-			return -1;
-		}
-
-		return x / menu->geometry.height;
 	}
 
 	if ((y < menu->geometry.y + menu->offset + menu->padding) || (y >= menu->geometry.y + menu->geometry.height - menu->padding)) {
@@ -103,293 +90,8 @@ menu_calculate_entry(menu_t *menu, int x, int y, Bool cycle)
 	return y / (menu->state->fonts[FONT_MENU_ITEM]->height + 1);
 }
 
-void *
-menu_cycle(menu_t *menu)
-{
-	Bool processing = True;
-	int focusrevert, i = 0;
-	menu_item_t *item;
-	Window focus;
-	XEvent event;
-
-	TAILQ_FOREACH(item, &menu->items, item) {
-		TAILQ_INSERT_TAIL(&menu->results, item, result);
-		menu->count++;
-	}
-
-	if (menu->count < 2) {
-		return NULL;
-	}
-
-	menu->selected_item = 1;
-	menu->selected_visible = 1;
-	menu->geometry.height = 180;
-	menu->geometry.width = menu->count * menu->geometry.height;
-	menu->geometry.x = menu->screen->geometry.x + (menu->screen->geometry.width - menu->geometry.width) / 2;
-	menu->geometry.y = menu->screen->geometry.y + (menu->screen->geometry.height - menu->geometry.height) / 2;
-
-	menu->visible = TAILQ_FIRST(&menu->results);
-
-	XSelectInput(menu->state->display, menu->window, MENUMASK);
-	XMapRaised(menu->state->display, menu->window);
-
-	if (XGrabPointer(
-				menu->state->display,
-				menu->window,
-				False,
-				MENUGRABMASK,
-				GrabModeAsync,
-				GrabModeAsync,
-				None,
-				None,
-				CurrentTime) != GrabSuccess) {
-		XftDrawDestroy(menu->draw);
-		XDestroyWindow(menu->state->display, menu->window);
-		return NULL;
-	}
-
-	XGetInputFocus(menu->state->display, &focus, &focusrevert);
-	XSetInputFocus(menu->state->display, menu->window, RevertToPointerRoot, CurrentTime);
-
-	XGrabKeyboard(menu->state->display, menu->window, True, GrabModeAsync, GrabModeAsync, CurrentTime);
-
-	XMoveResizeWindow(
-			menu->state->display,
-			menu->window,
-			menu->geometry.x,
-			menu->geometry.y,
-			menu->geometry.width,
-			menu->geometry.height);
-
-	menu->window_picture = XRenderCreatePicture(
-			menu->state->display,
-			menu->window,
-			XRenderFindVisualFormat(menu->state->display, menu->state->visual),
-			0,
-			NULL);
-
-	menu_draw_horizontal(menu);
-
-	while (processing) {
-		XWindowEvent(menu->state->display, menu->window, MENUMASK, &event);
-		switch (event.type) {
-			case KeyPress:
-				i = menu_handle_key(menu, &event.xkey, True);
-				if (i == 1) {
-					menu_draw_horizontal(menu);
-				} else if ((i == -1) || ((i == 2) && (menu->count > 0))) {
-					processing = False;
-				}
-
-				break;
-			case KeyRelease:
-				if ((event.xkey.keycode == 0x40) && (event.xkey.state & Mod1Mask)) {
-					processing = False;
-				}
-
-				break;
-			case Expose:
-				menu_draw_horizontal(menu);
-				break;
-			case MotionNotify:
-				if (menu_handle_move(menu, event.xbutton.x_root, event.xbutton.y_root, True)) {
-					menu_draw_horizontal(menu);
-				}
-				break;
-			case ButtonPress:
-				if (event.xbutton.button == Button4) {
-					menu_move_right(menu);
-					menu_draw_horizontal(menu);
-				} else if (event.xbutton.button == Button5) {
-					menu_move_left(menu);
-					menu_draw_horizontal(menu);
-				}
-
-				break;
-			case ButtonRelease:
-				if (event.xbutton.button == Button1) {
-					i = menu_handle_release(menu, event.xbutton.x_root, event.xbutton.y_root);
-					processing = False;
-				}
-
-				break;
-		}
-	}
-
-	XftDrawDestroy(menu->draw);
-	XDestroyWindow(menu->state->display, menu->window);
-
-	XSetInputFocus(menu->state->display, focus, focusrevert, CurrentTime);
-
-	XUngrabKeyboard(menu->state->display, CurrentTime);
-	XUngrabPointer(menu->state->display, CurrentTime);
-
-	if (i == -1) {
-		return NULL;
-	}
-
-	item = menu->visible;
-	for (i = 0; i < menu->selected_visible; i++) {
-		item = TAILQ_NEXT(item, result);
-	}
-
-	return (item == NULL) ? NULL : item->context;
-}
-
 void
-menu_draw_horizontal(menu_t *menu)
-{
-	double size;
-	int i = 0, x, y;
-	menu_item_t *item;
-	Picture icon_picture, mask_picture;
-	unsigned int border_width, depth, height, width;
-	Window root;
-	XTransform transform;
-
-	size = 0.5 * menu->geometry.height;
-
-	memset(&transform, 0, sizeof(XTransform));
-	transform.matrix[2][2] = XDoubleToFixed(1);
-
-	XClearWindow(menu->state->display, menu->window);
-
-	item = menu->visible;
-	while ((i < menu->limit) && item) {
-		XGetGeometry(menu->state->display, item->icon, &root, &x, &y, &width, &height, &border_width, &depth);
-		transform.matrix[0][0] = XDoubleToFixed((double)width / size);
-		transform.matrix[1][1] = XDoubleToFixed((double)height / size);
-
-		icon_picture = XRenderCreatePicture(
-				menu->state->display,
-				item->icon,
-				XRenderFindVisualFormat(menu->state->display, menu->state->visual),
-				0,
-				NULL);
-		XRenderSetPictureTransform(menu->state->display, icon_picture, &transform);
-
-		mask_picture = XRenderCreatePicture(
-				menu->state->display,
-				item->mask,
-				XRenderFindStandardFormat(menu->state->display, PictStandardA1),
-				0,
-				NULL);
-		XRenderSetPictureTransform(menu->state->display, mask_picture, &transform);
-
-		XRenderComposite(
-				menu->state->display,
-				PictOpOver,
-				icon_picture,
-				mask_picture,
-				menu->window_picture,
-				x,
-				y,
-				x,
-				y,
-				i * menu->geometry.height + (menu->geometry.height - size) / 2,
-				(menu->geometry.height - size) / 2,
-				size,
-				size);
-
-		XRenderFreePicture(menu->state->display, icon_picture);
-		XRenderFreePicture(menu->state->display, mask_picture);
-
-		item = TAILQ_NEXT(item, result);
-		i++;
-	}
-
-	if (i > 0) {
-		menu_draw_selection_horizontal(menu, menu->selected_visible);
-	}
-}
-
-void
-menu_draw_selection_horizontal(menu_t *menu, int entry)
-{
-	double size;
-	int i, x, y;
-	menu_item_t *item = menu->visible;
-	Picture icon_picture, mask_picture;
-	unsigned int border_width, depth, height, width;
-	Window root;
-	XftFont *font;
-	XGlyphInfo extents;
-	XTransform transform;
-
-	for (i = 0; i < entry; i++) {
-		item = TAILQ_NEXT(item, result);
-	}
-
-	if (!item) {
-		return;
-	}
-
-	size = 0.5 * menu->geometry.height;
-
-	memset(&transform, 0, sizeof(XTransform));
-	transform.matrix[2][2] = XDoubleToFixed(1);
-
-	font = menu->state->fonts[FONT_MENU_ITEM];
-
-	XGetGeometry(menu->state->display, item->icon, &root, &x, &y, &width, &height, &border_width, &depth);
-	transform.matrix[0][0] = XDoubleToFixed((double)width / size);
-	transform.matrix[1][1] = XDoubleToFixed((double)height / size);
-
-	icon_picture = XRenderCreatePicture(
-			menu->state->display,
-			item->icon,
-			XRenderFindVisualFormat(menu->state->display, menu->state->visual),
-			0,
-			NULL);
-	XRenderSetPictureTransform(menu->state->display, icon_picture, &transform);
-
-	mask_picture = XRenderCreatePicture(
-			menu->state->display,
-			item->mask,
-			XRenderFindStandardFormat(menu->state->display, PictStandardA1),
-			0,
-			NULL);
-	XRenderSetPictureTransform(menu->state->display, mask_picture, &transform);
-
-	XftDrawRect(
-			menu->draw,
-			&menu->state->colors[COLOR_MENU_SELECTION_BACKGROUND],
-			entry * menu->geometry.height + 2 * menu->padding,
-			2 * menu->padding,
-			menu->geometry.height - 4 * menu->padding,
-			menu->geometry.height - 4 * menu->padding);
-
-	XRenderComposite(
-			menu->state->display,
-			PictOpOver,
-			icon_picture,
-			mask_picture,
-			menu->window_picture,
-			x,
-			y,
-			x,
-			y,
-			MAX(entry * menu->geometry.height + (menu->geometry.height - size) / 2, 0),
-			(menu->geometry.height - size) / 2,
-			size,
-			size);
-
-	XRenderFreePicture(menu->state->display, icon_picture);
-	XRenderFreePicture(menu->state->display, mask_picture);
-
-	XftTextExtentsUtf8(menu->state->display, font, (const FcChar8 *)item->text, strlen(item->text), &extents);
-	XftDrawStringUtf8(
-			menu->draw,
-			&menu->state->colors[COLOR_MENU_SELECTION_FOREGROUND],
-			font,
-			entry * menu->geometry.height + (menu->geometry.height - extents.xOff) / 2,
-			menu->geometry.height - (2 * menu->padding - font->ascent) / 2,
-			(const FcChar8 *)item->text,
-			strlen(item->text));
-}
-
-void
-menu_draw_selection_vertical(menu_t *menu, int entry)
+menu_draw_selection(menu_t *menu, int entry)
 {
 	int i;
 	menu_item_t *item = menu->visible;
@@ -424,7 +126,7 @@ menu_draw_selection_vertical(menu_t *menu, int entry)
 }
 
 void
-menu_draw_vertical(menu_t *menu)
+menu_draw(menu_t *menu)
 {
 	int i = 0, y;
 	menu_item_t *item;
@@ -491,7 +193,7 @@ menu_draw_vertical(menu_t *menu)
 	}
 
 	if (i > 0) {
-		menu_draw_selection_vertical(menu, menu->selected_visible);
+		menu_draw_selection(menu, menu->selected_visible);
 	}
 }
 
@@ -509,7 +211,11 @@ menu_filter(menu_t *menu)
 		menu->count++;
 	}
 
-	if (menu->count == 0) {
+	if (menu->cycle) {
+		if (menu->count < 2) {
+			return NULL;
+		}
+	} else if (menu->count == 0) {
 		return NULL;
 	}
 
@@ -522,6 +228,10 @@ menu_filter(menu_t *menu)
 	menu->geometry.y = menu->screen->geometry.y + 0.2 * menu->screen->geometry.height;
 
 	menu->visible = TAILQ_FIRST(&menu->results);
+	if (menu->cycle) {
+		menu->selected_item = 1;
+		menu->selected_visible = 1;
+	}
 
 	XSelectInput(menu->state->display, menu->window, MENUMASK);
 	XMapRaised(menu->state->display, menu->window);
@@ -550,29 +260,37 @@ menu_filter(menu_t *menu)
 		XWindowEvent(menu->state->display, menu->window, MENUMASK, &event);
 		switch (event.type) {
 			case KeyPress:
-				i = menu_handle_key(menu, &event.xkey, False);
+				i = menu_handle_key(menu, &event.xkey);
 				if (i == 1) {
-					menu_draw_vertical(menu);
+					menu_draw(menu);
 				} else if ((i == -1) || ((i == 2) && (menu->count > 0))) {
 					processing = False;
 				}
 
 				break;
+			case KeyRelease:
+				if (menu->cycle) {
+					if ((event.xkey.keycode == 0x40) && (event.xkey.state & Mod1Mask)) {
+						processing = False;
+					}
+				}
+
+				break;
 			case Expose:
-				menu_draw_vertical(menu);
+				menu_draw(menu);
 				break;
 			case MotionNotify:
-				if (menu_handle_move(menu, event.xbutton.x_root, event.xbutton.y_root, False)) {
-					menu_draw_vertical(menu);
+				if (menu_handle_move(menu, event.xbutton.x_root, event.xbutton.y_root)) {
+					menu_draw(menu);
 				}
 				break;
 			case ButtonPress:
 				if (event.xbutton.button == Button4) {
 					menu_move_up(menu);
-					menu_draw_vertical(menu);
+					menu_draw(menu);
 				} else if (event.xbutton.button == Button5) {
 					menu_move_down(menu);
-					menu_draw_vertical(menu);
+					menu_draw(menu);
 				}
 
 				break;
@@ -735,7 +453,7 @@ menu_free(menu_t *menu)
 }
 
 int
-menu_handle_key(menu_t *menu, XKeyEvent *event, Bool cycle)
+menu_handle_key(menu_t *menu, XKeyEvent *event)
 {
 	char c[32];
 	int wide_length;
@@ -775,37 +493,37 @@ menu_handle_key(menu_t *menu, XKeyEvent *event, Bool cycle)
 		case XK_Return:
 			return 2;
 		case XK_Tab:
-			return cycle ? menu_move_right(menu) : menu_filter_complete(menu);
+			return menu->cycle ? menu_move_right(menu) : menu_filter_complete(menu);
 		case XK_ISO_Left_Tab:
-			return cycle ? menu_move_left(menu) : 0;
+			return menu->cycle ? menu_move_left(menu) : 0;
 		case XK_b:
-			if (cycle && (event->state & ControlMask)) {
+			if (menu->cycle && (event->state & ControlMask)) {
 				return menu_move_left(menu);
 			}
 
 			break;
 		case XK_Left:
-			return cycle ? menu_move_left(menu) : 0;
+			return menu->cycle ? menu_move_left(menu) : 0;
 		case XK_Up:
-			return cycle ? 0 : menu_move_up(menu);
+			return menu->cycle ? 0 : menu_move_up(menu);
 		case XK_p:
-			if (!cycle && (event->state & ControlMask)) {
+			if (!menu->cycle && (event->state & ControlMask)) {
 				return menu_move_up(menu);
 			}
 
 			break;
 		case XK_f:
-			if (cycle && (event->state & ControlMask)) {
+			if (menu->cycle && (event->state & ControlMask)) {
 				return menu_move_right(menu);
 			}
 
 			break;
 		case XK_Right:
-			return cycle ? menu_move_right(menu) : 0;
+			return menu->cycle ? menu_move_right(menu) : 0;
 		case XK_Down:
-			return cycle ? 0 : menu_move_down(menu);
+			return menu->cycle ? 0 : menu_move_down(menu);
 		case XK_n:
-			if (!cycle && (event->state & ControlMask)) {
+			if (!menu->cycle && (event->state & ControlMask)) {
 				return menu_move_down(menu);
 			}
 
@@ -834,10 +552,10 @@ menu_handle_key(menu_t *menu, XKeyEvent *event, Bool cycle)
 }
 
 Bool
-menu_handle_move(menu_t *menu, int x, int y, Bool cycle)
+menu_handle_move(menu_t *menu, int x, int y)
 {
 	menu->selected_previous = menu->selected_visible;
-	menu->selected_visible = menu_calculate_entry(menu, x, y, cycle);
+	menu->selected_visible = menu_calculate_entry(menu, x, y);
 
 	if (menu->selected_visible == menu->selected_previous) {
 		return False;
@@ -848,11 +566,7 @@ menu_handle_move(menu_t *menu, int x, int y, Bool cycle)
 		return False;
 	}
 
-	if (cycle) {
-		menu_draw_selection_horizontal(menu, menu->selected_visible);
-	} else {
-		menu_draw_selection_vertical(menu, menu->selected_visible);
-	}
+	menu_draw_selection(menu, menu->selected_visible);
 
 	return True;
 }
@@ -872,7 +586,7 @@ menu_handle_release(menu_t *menu, int x, int y)
 }
 
 menu_t *
-menu_init(state_t *state, screen_t *screen, char *prompt)
+menu_init(state_t *state, screen_t *screen, char *prompt, Bool cycle)
 {
 	menu_t *menu;
 	XClassHint *hint;
@@ -901,8 +615,6 @@ menu_init(state_t *state, screen_t *screen, char *prompt)
 			menu->window,
 			state->visual,
 			state->colormap);
-	menu->gc = XCreateGC(state->display, menu->window, 0, &values);
-	menu->window_picture = None;
 	if (prompt) {
 		menu->prompt = strdup(prompt);
 	} else {
@@ -913,6 +625,7 @@ menu_init(state_t *state, screen_t *screen, char *prompt)
 	menu->limit = 10; // state->config->menu_limit;
 	menu->padding = 15; // state->config->menu_padding;
 	menu->border_width = state->config->border_width;
+	menu->cycle = cycle;
 
 	hint = XAllocClassHint();
 	hint->res_name = strdup("magnetwm");

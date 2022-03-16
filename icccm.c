@@ -44,9 +44,11 @@ icccm_init(state_t *state)
 	return icccm;
 }
 
-void
+Bool
 icccm_handle_property(state_t *state, client_t *client, Atom type)
 {
+	Bool result = True;
+
 	switch (type) {
 		case XA_WM_NORMAL_HINTS:
 			client_update_size_hints(state, client);
@@ -63,10 +65,14 @@ icccm_handle_property(state_t *state, client_t *client, Atom type)
 		default:
 			if (type == state->icccm->atoms[WM_PROTOCOLS]) {
 				icccm_restore_wm_protocols(state, client);
+			} else {
+				result = False;
 			}
 
 			break;
 	}
+
+	return result;
 }
 
 void

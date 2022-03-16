@@ -42,6 +42,7 @@ event_handle_button_press(state_t *state, XButtonPressedEvent *event)
 		client = client_find_active(state);
 		if (client) {
 			client_deactivate(state, client);
+			client = NULL;
 		}
 	}
 
@@ -244,7 +245,9 @@ event_handle_property_notify(state_t *state, XPropertyEvent *event)
 		return;
 	}
 
-	icccm_handle_property(state, client, event->atom);
+	if (!icccm_handle_property(state, client, event->atom)) {
+		ewmh_handle_property(state, client, event->atom);
+	}
 }
 
 void

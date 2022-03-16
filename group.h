@@ -1,8 +1,6 @@
 #ifndef __GROUP_H__
 #define __GROUP_H__
 
-#include <X11/Xlib.h>
-
 #include "queue.h"
 
 struct client_t;
@@ -13,9 +11,6 @@ TAILQ_HEAD(client_q, client_t);
 
 typedef struct group_t {
 	TAILQ_ENTRY(group_t) entry;
-
-	Pixmap icon;
-	Pixmap mask;
 
 	char *name;
 

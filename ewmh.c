@@ -100,6 +100,14 @@ ewmh_handle_net_wm_state_message(state_t *state, client_t *client, int action, A
 	}
 }
 
+void
+ewmh_handle_property(state_t *state, client_t *client, Atom type)
+{
+	if (type == state->ewmh->atoms[_NET_WM_NAME]) {
+		client_update_wm_name(state, client);
+	}
+}
+
 ewmh_t *
 ewmh_init(state_t *state)
 {
@@ -117,6 +125,7 @@ ewmh_init(state_t *state)
 		"_NET_SUPPORTED",
 		"_NET_SUPPORTING_WM_CHECK",
 		"_NET_WM_DESKTOP",
+		"_NET_WM_ICON",
 		"_NET_WM_NAME",
 		"_NET_WM_STATE",
 		"_NET_WM_STATE_DEMANDS_ATTENTION",

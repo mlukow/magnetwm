@@ -19,6 +19,7 @@ void function_menu_command(struct state_t *, void *, long);
 void function_menu_exec(struct state_t *, void *, long);
 void function_terminal(struct state_t *, void *, long);
 void function_window_center(struct state_t *, void *, long);
+void function_window_close(struct state_t *, void *, long);
 void function_window_cycle(struct state_t *, void *, long);
 void function_window_fullscreen(struct state_t *, void *, long);
 void function_window_maximize(struct state_t *, void *, long);

@@ -18,8 +18,6 @@ typedef struct menu_item_t {
 	void *context;
 
 	char *text;
-	Pixmap icon;
-	Pixmap mask;
 } menu_item_t;
 
 typedef struct menu_t {
@@ -28,13 +26,11 @@ typedef struct menu_t {
 
 	Window window;
 	XftDraw *draw;
-	GC gc;
-
-	Picture window_picture;
 
 	geometry_t geometry;
 	int offset;
 
+	Bool cycle;
 	int padding;
 	char *prompt;
 	char *filter;
@@ -52,10 +48,9 @@ typedef struct menu_t {
 	menu_item_t *visible;
 } menu_t;
 
-void menu_add(menu_t *, void *, Bool, char *, Pixmap, Pixmap);
-void *menu_cycle(menu_t *);
+void menu_add(menu_t *, void *, Bool, char *);
 void *menu_filter(menu_t *);
 void menu_free(menu_t *);
-menu_t *menu_init(struct state_t *, struct screen_t *, char *);
+menu_t *menu_init(struct state_t *, struct screen_t *, char *, Bool);
 
 #endif /* __MENU_H__ */

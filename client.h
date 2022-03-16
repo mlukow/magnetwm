@@ -36,8 +36,6 @@ typedef struct client_t {
 	TAILQ_ENTRY(client_t) entry;
 
 	Window window;
-	Pixmap icon;
-	Pixmap mask;
 
 	struct group_t *group;
 
