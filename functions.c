@@ -186,56 +186,14 @@ function_window_cycle(struct state_t *state, void *context, long flag)
 	KeySym keysym;
 	XEvent event;
 
-	client->flags &= ~CLIENT_ACTIVE;
-	client_draw_border(state, client);
-	client = (flag == 0) ? client_next(client) : client_previous(client);
-	client->flags |= CLIENT_ACTIVE;
+	if (flag == 0) {
+		client = client_next(client);
+	} else {
+		client = client_previous(client);
+	}
+
 	client_raise(state, client);
-	client_draw_border(state, client);
-
-	XGrabKeyboard(state->display, state->root, True, GrabModeAsync, GrabModeAsync, CurrentTime);
-
-	while (processing) {
-		XWindowEvent(state->display, state->root, KeyPressMask | KeyReleaseMask, &event);
-		switch (event.type) {
-			case KeyPress:
-				keysym = XkbKeycodeToKeysym(
-						state->display,
-						((XKeyEvent *)&event)->keycode,
-						0,
-						((XKeyEvent *)&event)->state & ShiftMask);
-
-				if (keysym == XK_less) {
-					client->flags &= ~CLIENT_ACTIVE;
-					client_draw_border(state, client);
-					client = client_next(client);
-					client->flags |= CLIENT_ACTIVE;
-					client_raise(state, client);
-					client_draw_border(state, client);
-				} else if (keysym == XK_greater) {
-					client->flags &= ~CLIENT_ACTIVE;
-					client_draw_border(state, client);
-					client = client_previous(client);
-					client->flags |= CLIENT_ACTIVE;
-					client_raise(state, client);
-					client_draw_border(state, client);
-				}
-
-				break;
-			case KeyRelease:
-				if ((event.xkey.keycode == 0x40) && (event.xkey.state & Mod1Mask)) {
-					processing = False;
-				}
-
-				break;
-		}
-	}
-
-	XUngrabKeyboard(state->display, CurrentTime);
-
-	if (client != context) {
-		client_activate(state, client);
-	}
+	client_activate(state, client, False);
 }
 
 void

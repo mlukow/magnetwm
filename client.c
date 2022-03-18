@@ -19,7 +19,7 @@ void client_configure(state_t *, client_t *);
 void client_update_class(state_t *, client_t *);
 
 void
-client_activate(state_t *state, client_t *client)
+client_activate(state_t *state, client_t *client, Bool requeue)
 {
 	client_t *current;
 
@@ -37,8 +37,10 @@ client_activate(state_t *state, client_t *client)
 		icccm_take_focus(state, client);
 	}
 
-	TAILQ_REMOVE(&client->group->clients, client, entry);
-	TAILQ_INSERT_TAIL(&client->group->clients, client, entry);
+	if (requeue) {
+		TAILQ_REMOVE(&client->group->clients, client, entry);
+		TAILQ_INSERT_TAIL(&client->group->clients, client, entry);
+	}
 
 	client->flags |= CLIENT_ACTIVE;
 	client->flags &= ~CLIENT_URGENCY;
@@ -351,7 +353,7 @@ client_remove(state_t *state, client_t *client)
 	TAILQ_FOREACH_REVERSE(client, &group->clients, client_q, entry) {
 		if (!(client->flags & CLIENT_IGNORE)) {
 			client_raise(state, client);
-			client_activate(state, client);
+			client_activate(state, client, True);
 			return;
 		}
 	}
@@ -364,7 +366,7 @@ client_remove(state_t *state, client_t *client)
 
 		TAILQ_FOREACH_REVERSE(client, &group->clients, client_q, entry) {
 			if (!(client->flags & CLIENT_IGNORE)) {
-				client_activate(state, client);
+				client_activate(state, client, True);
 				break;
 			}
 		}

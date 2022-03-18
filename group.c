@@ -20,7 +20,7 @@ group_activate(state_t *state, group_t *group)
 
 	TAILQ_FOREACH_REVERSE(client, &group->clients, client_q, entry) {
 		if (!(client->flags & CLIENT_IGNORE)) {
-			client_activate(state, client);
+			client_activate(state, client, True);
 			return;
 		}
 	}

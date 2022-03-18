@@ -36,7 +36,7 @@ event_handle_button_press(state_t *state, XButtonPressedEvent *event)
 		client_raise(state, client);
 
 		if (!(client->flags & CLIENT_ACTIVE) && !(client->flags & CLIENT_IGNORE)) {
-			client_activate(state, client);
+			client_activate(state, client, True);
 		}
 	} else {
 		client = client_find_active(state);
@@ -228,7 +228,7 @@ event_handle_map_request(state_t *state, XMapRequestEvent *event)
 	client_show(state, client);
 
 	if (!(client->flags & CLIENT_IGNORE)) {
-		client_activate(state, client);
+		client_activate(state, client, True);
 	}
 
 	TAILQ_REMOVE(&client->group->desktop->groups, client->group, entry);
