@@ -217,6 +217,8 @@ screen_free(screen_t *screen)
 screen_t *
 screen_init(state_t *state, char *name, RRCrtc id, geometry_t geometry, unsigned long width, unsigned long height)
 {
+	char desktop_name[10];
+	int i;
 	screen_t *screen;
 
 	screen = calloc(1, sizeof(screen_t));
@@ -228,11 +230,12 @@ screen_init(state_t *state, char *name, RRCrtc id, geometry_t geometry, unsigned
 	screen->desktop_count = 4;
 	screen->desktop_index = 0;
 	screen->desktops = calloc(screen->desktop_count, sizeof(desktop_t));
-	screen->desktops[0] = desktop_init("Desktop 1");
-	screen->desktops[1] = desktop_init("Desktop 2");
-	screen->desktops[2] = desktop_init("Desktop 3");
-	screen->desktops[3] = desktop_init("Desktop 4");
-	screen->desktops[screen->desktop_index]->screen = screen;
+
+	for (i = 0; i < screen->desktop_count; i++) {
+		sprintf(desktop_name, "Desktop %d\n", i);
+		screen->desktops[i] = desktop_init(desktop_name);
+		screen->desktops[i]->screen = screen;
+	}
 
 	screen_update_geometry(state, screen, geometry);
 
