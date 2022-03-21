@@ -50,6 +50,20 @@ group_assign(desktop_t *desktop, client_t *client)
 	return group;
 }
 
+Bool
+group_can_activate(group_t *group)
+{
+	client_t *client;
+
+	TAILQ_FOREACH(client, &group->clients, entry) {
+		if (!(client->flags & CLIENT_IGNORE)) {
+			return True;
+		}
+	}
+
+	return False;
+}
+
 void
 group_deactivate(state_t *state, group_t *group)
 {

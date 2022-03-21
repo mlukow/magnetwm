@@ -33,7 +33,9 @@ function_group_cycle(state_t *state, void *context, long flag)
 	menu = menu_init(state, screen, NULL, True);
 
 	TAILQ_FOREACH_REVERSE(group, &desktop->groups, group_q, entry) {
-		menu_add(menu, group, 0, group->name);
+		if (group_can_activate(group)) {
+			menu_add(menu, group, 0, group->name);
+		}
 	}
 
 	group = (group_t *)menu_filter(menu);
