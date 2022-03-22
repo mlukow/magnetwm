@@ -24,9 +24,14 @@ client_activate(state_t *state, client_t *client, Bool requeue)
 	client_t *current;
 
 	current = client_find_active(state);
-	if (current) {
+	if (current && (current != client)) {
 		current->flags &= ~CLIENT_ACTIVE;
 		client_draw_border(state, current);
+
+		if (current->group != client->group) {
+			TAILQ_REMOVE(&client->group->desktop->groups, client->group, entry);
+			TAILQ_INSERT_TAIL(&client->group->desktop->groups, client->group, entry);
+		}
 	}
 
 	if ((client->flags & CLIENT_INPUT) || (!(client->flags & CLIENT_WM_TAKE_FOCUS))) {

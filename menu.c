@@ -111,7 +111,7 @@ menu_draw_selection(menu_t *menu, int entry)
 			menu->draw,
 			&menu->state->colors[COLOR_MENU_SELECTION_BACKGROUND],
 			0,
-			menu->offset + menu->padding + entry * (font->height + 1),
+			menu->offset + menu->padding + entry * (font->height + 1) + 1,
 			menu->geometry.width,
 			font->height + 1);
 
@@ -120,7 +120,7 @@ menu_draw_selection(menu_t *menu, int entry)
 			&menu->state->colors[COLOR_MENU_SELECTION_FOREGROUND],
 			font,
 			menu->padding,
-			menu->offset + menu->padding + entry * (font->height + 1) + font->ascent + 1,
+			menu->offset + menu->padding + entry * (font->height + 1) + font->ascent,
 			(const FcChar8 *)item->text,
 			strlen(item->text));
 }
@@ -179,7 +179,7 @@ menu_draw(menu_t *menu)
 	item = menu->visible;
 	font = menu->state->fonts[FONT_MENU_ITEM];
 	while ((i < menu->limit) && item) {
-		y = menu->offset + menu->padding + i * (font->height + 1) + font->ascent + 1;
+		y = menu->offset + menu->padding + i * (font->height + 1) + font->ascent;
 		XftDrawStringUtf8(
 				menu->draw,
 				&menu->state->colors[COLOR_MENU_FOREGROUND],
