@@ -2,53 +2,53 @@ border-width		1
 animate-transitions	yes
 animation-duration	100
 
-ignore	Polybar
+ignore		Polybar
 
-color	border-active	rgb:00/ff/00
-color	border-inactive	rgb:00/00/ff
-color	border-urgent	rgb:ff/00/00
-color	menu-foreground	rgb:ff/ff/ff
-color	menu-background	rgb:00/00/00
-color	menu-selection-foreground	rgb:ff/ff/ff
-color	menu-selection-background	rgb:00/00/ff
-color	menu-separator	rgb:54/53/51
+color		border-active			rgb:00/ff/00
+color		border-inactive			rgb:00/00/ff
+color		border-urgent			rgb:ff/00/00
+color		menu-foreground			rgb:ff/ff/ff
+color		menu-background			rgb:00/00/00
+color		menu-selection-foreground	rgb:ff/ff/ff
+color		menu-selection-background	rgb:00/00/ff
+color		menu-separator			rgb:54/53/51
 
-font	menu-item "Ubuntu Mono:size=13"
-font	menu-input "Ubuntu Mono:size=18"
+font		menu-item			"Ubuntu Mono:size=13"
+font		menu-input			"Ubuntu Mono:size=18"
 
-command		terminal	"xterm -T Terminal"
-command		firefox		"firefox-esr"
+command		terminal			"xterm -T Terminal"
+command		firefox				"firefox-esr"
 
-bind-key	CMS-q			quit
-bind-key	CMS-r			restart
-bind-key	M-Tab			group-cycle
-bind-key	5-less			window-cycle
-bind-key	MS-section		window-rcycle
-bind-key	M-space			menu-exec
-bind-key	MS-a			menu-command
-bind-key	MS-h			window-tile-left
-bind-key	CMS-h			window-tile-left-third
-bind-key	MS-l			window-tile-right
-bind-key	CMS-l			window-tile-right-third
-bind-key	MS-j			window-tile-down
-bind-key	CMS-j			window-tile-down-third
-bind-key	MS-k			window-tile-up
-bind-key	CMS-k			window-tile-up-third
-bind-key	MS-u			window-tile-up-left
-bind-key	CMS-u			window-tile-up-left-third
-bind-key	MS-i			window-tile-up-right
-bind-key	CMS-i			window-tile-up-right-third
-bind-key	MS-n			window-tile-down-left
-bind-key	CMS-n			window-tile-down-left-third
-bind-key	MS-m			window-tile-down-right
-bind-key	CMS-m			window-tile-down-right-third
-bind-key	MS-c			window-center
-bind-key	MS-Return		window-maximize
-bind-key	CM4-h			window-move-to-screen-left
-bind-key	CM4-l			window-move-to-screen-right
-bind-key	CM4-j			window-move-to-screen-below
-bind-key	CM4-k			window-move-to-screen-above
-bind-key	MS-BackSpace	window-restore
+bind-key	CMS-q				quit
+bind-key	CMS-r				restart
+bind-key	M-Tab				group-cycle
+bind-key	5-less				window-cycle
+bind-key	MS-section			window-rcycle
+bind-key	M-space				menu-exec
+bind-key	MS-a				menu-command
+bind-key	MS-h				window-tile-left
+bind-key	CMS-h				window-tile-left-third
+bind-key	MS-l				window-tile-right
+bind-key	CMS-l				window-tile-right-third
+bind-key	MS-j				window-tile-down
+bind-key	CMS-j				window-tile-down-third
+bind-key	MS-k				window-tile-up
+bind-key	CMS-k				window-tile-up-third
+bind-key	MS-u				window-tile-up-left
+bind-key	CMS-u				window-tile-up-left-third
+bind-key	MS-i				window-tile-up-right
+bind-key	CMS-i				window-tile-up-right-third
+bind-key	MS-n				window-tile-down-left
+bind-key	CMS-n				window-tile-down-left-third
+bind-key	MS-m				window-tile-down-right
+bind-key	CMS-m				window-tile-down-right-third
+bind-key	MS-c				window-center
+bind-key	MS-Return			window-maximize
+bind-key	CM4-h				window-move-to-screen-left
+bind-key	CM4-l				window-move-to-screen-right
+bind-key	CM4-j				window-move-to-screen-below
+bind-key	CM4-k				window-move-to-screen-above
+bind-key	MS-BackSpace			window-restore
 bind-key	M-t				terminal
 
 bind-mouse	M-1				window-move
