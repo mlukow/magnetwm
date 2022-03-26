@@ -149,6 +149,7 @@ static config_t *config;
 %token ERROR
 %token FONT
 %token IGNORE
+%token MARGIN
 %token MENUBACKGROUND
 %token MENUFOREGROUND
 %token MENUINPUT
@@ -290,6 +291,12 @@ main	: ANIMATETRANSITIONS yesno {
 			config_ignore(config, $2);
 			free($2);
 		}
+		| MARGIN NUMBER NUMBER NUMBER NUMBER {
+			config->margin.top = $2;
+			config->margin.bottom = $3;
+			config->margin.left = $4;
+			config->margin.right = $5;
+		}
 		;
 
 %%
@@ -384,6 +391,7 @@ lookup(char *s)
 		{ "command", COMMAND },
 		{ "font", FONT },
 		{ "ignore", IGNORE },
+		{ "margin", MARGIN },
 		{ "menu-background", MENUBACKGROUND },
 		{ "menu-foreground", MENUFOREGROUND },
 		{ "menu-input", MENUINPUT },
@@ -759,6 +767,11 @@ config_init(char *path)
 	config->animate_transitions = False;
 	config->animation_duration = 0.1;
 	config->border_width = 1;
+
+	config->margin.top = 0;
+	config->margin.bottom = 0;
+	config->margin.left = 0;
+	config->margin.right = 0;
 
 	TAILQ_INIT(&config->commands);
 	TAILQ_INIT(&config->keybindings);

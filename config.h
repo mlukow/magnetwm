@@ -59,11 +59,20 @@ typedef struct ignored_t {
 	char *class_name;
 } ignored_t;
 
+typedef struct margin_t {
+	unsigned int top;
+	unsigned int bottom;
+	unsigned int left;
+	unsigned int right;
+} margin_t;
+
 typedef struct config_t {
 	struct command_q commands;
 	struct binding_q keybindings;
 	struct binding_q mousebindings;
 	struct ignored_q ignored;
+
+	struct margin_t margin;
 
 	char *colors[COLOR_NITEMS];
 	char *fonts[FONT_NITEMS];

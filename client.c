@@ -483,9 +483,9 @@ client_toggle_maximize(state_t *state, client_t *client)
 		client->geometry_saved = client->geometry;
 
 		client->geometry.x = screen->geometry.x;
-		client->geometry.y = screen->geometry.y;
+		client->geometry.y = screen->geometry.y + state->config->margin.top;
 		client->geometry.width = screen->geometry.width - 2 * client->border_width;
-		client->geometry.height = screen->geometry.height - 2 * client->border_width;
+		client->geometry.height = screen->geometry.height - 2 * client->border_width - state->config->margin.top;
 
 		client->flags |= CLIENT_MAXIMIZED;
 	}
