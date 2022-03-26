@@ -42,7 +42,8 @@ signal_handler(int signum)
 int
 main(int argc, char **argv)
 {
-	char *home, *file;
+	char buf[BUFSIZ], *home, *file;
+	int bytes;
     state_t *state;
 	struct passwd *pw;
     struct pollfd pfd[1];
@@ -96,7 +97,12 @@ main(int argc, char **argv)
     state_free(state);
 
     if (wm_state == RESTART) {
-        xexec("magnetwm");
+		sprintf(buf, "/proc/%d/exe", getpid());
+		bytes = readlink(buf, buf, BUFSIZ);
+		if (bytes > 0) {
+			buf[bytes] = '\0';
+	        xexec(buf);
+		}
 	}
 
     return EXIT_SUCCESS;

@@ -1,7 +1,7 @@
 border-width		1
 animate-transitions	yes
 animation-duration	100
-margin		35	0	0	0
+margin		32	0	0	0
 
 ignore		Polybar
 
@@ -17,14 +17,16 @@ color		menu-separator			rgb:54/53/51
 font		menu-item			"Ubuntu Mono:size=13"
 font		menu-input			"Ubuntu Mono:size=18"
 
+command		chrome				"/opt/google/chrome/google-chrome"
+command		spotify				"spotify"
 command		terminal			"xterm -T Terminal"
-command		firefox				"firefox-esr"
 
 bind-key	CMS-q				quit
 bind-key	CMS-r				restart
 bind-key	M-Tab				group-cycle
-bind-key	5-less				window-cycle
-bind-key	MS-section			window-rcycle
+bind-key	M-q				window-close
+bind-key	M-less				window-cycle
+bind-key	MS-less				window-rcycle
 bind-key	M-space				menu-exec
 bind-key	MS-a				menu-command
 bind-key	MS-h				window-tile-left
