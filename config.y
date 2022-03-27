@@ -778,7 +778,7 @@ config_init(char *path)
 	TAILQ_INIT(&config->mousebindings);
 	TAILQ_INIT(&config->ignored);
 
-	config_add_command(config, "terminal", "xterm");
+	config_add_command(config, "Terminal", "xterm");
 
 	stream = fopen(path, "r");
 	if (stream == NULL) {

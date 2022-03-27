@@ -17,9 +17,9 @@ color		menu-separator			rgb:54/53/51
 font		menu-item			"Ubuntu Mono:size=13"
 font		menu-input			"Ubuntu Mono:size=18"
 
-command		chrome				"/opt/google/chrome/google-chrome"
-command		spotify				"spotify"
-command		terminal			"xterm -T Terminal"
+command		Chrome				"/opt/google/chrome/google-chrome --ignore-gpu-blocklist --enable-gpu-rasterizatin --enable-zero-copy --disable-gpu-driver-bug-worksarounds --ozone-platform-hint=auto"
+command		Spotify				"spotify"
+command		Terminal			"xterm -T Terminal"
 
 bind-key	CMS-q				quit
 bind-key	CMS-r				restart
