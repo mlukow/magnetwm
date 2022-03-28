@@ -456,7 +456,7 @@ function_window_tile(state_t *state, void *context, long flag)
 
 	if (flag & DIRECTION_UP) {
 		geometry.y = screen->geometry.y + state->config->margin.top;
-		geometry.height = (screen->geometry.height - state->config->margin.top) / 2 - 2 * client->border_width - state->config->margin.top;
+		geometry.height = (screen->geometry.height - state->config->margin.top) / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_UP_THIRD) {
 		geometry.y = screen->geometry.y + state->config->margin.top;
 		geometry.height = (screen->geometry.height - state->config->margin.top) / 3 - 2 * client->border_width;
