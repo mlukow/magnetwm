@@ -167,15 +167,16 @@ void
 function_window_center(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t geometry;
+	geometry_t geometry, screen_area;
 	screen_t *screen;
 
 	screen = client->group->desktop->screen;
+	screen_area = screen_available_area(screen);
 
 	client->geometry_saved = client->geometry;
 
-	geometry.x = screen->geometry.x + (screen->geometry.width - client->geometry.width) / 2 - client->border_width;
-	geometry.y = screen->geometry.y + (screen->geometry.height - client->geometry.height) / 2 - client->border_width;
+	geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
+	geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
 	geometry.width = client->geometry.width;
 	geometry.height = client->geometry.height;
 
