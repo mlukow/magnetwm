@@ -45,7 +45,8 @@ ewmh_get_net_wm_state(state_t *state, client_t *client, int *count)
 	Atom *result;
 	unsigned char *output;
 
-	if ((*count = x_get_property(state->display, client->window, state->ewmh->atoms[_NET_WM_STATE], XA_ATOM, 64L, &output)) <= 0) {
+	*count = x_get_property(state->display, client->window, state->ewmh->atoms[_NET_WM_STATE], XA_ATOM, 64L, &output);
+	if (*count <= 0) {
 		return NULL;
 	}
 
@@ -54,6 +55,77 @@ ewmh_get_net_wm_state(state_t *state, client_t *client, int *count)
 	XFree(output);
 
 	return result;
+}
+
+Bool
+ewmh_get_net_wm_strut(state_t *state, client_t *client)
+{
+	int count;
+	screen_t *screen;
+	unsigned char *output;
+
+	count = x_get_property(
+			state->display,
+			client->window,
+			state->ewmh->atoms[_NET_WM_STRUT],
+			XA_CARDINAL,
+			32L,
+			&output);
+	if (count < 4) {
+		return False;
+	}
+
+	screen = client->group->desktop->screen;
+
+	client->strut.left = ((long *)output)[0];
+	client->strut.right = ((long *)output)[1];
+	client->strut.top = ((long *)output)[2];
+	client->strut.bottom = ((long *)output)[3];
+
+	client->strut.left_start_y = 0;
+	client->strut.left_end_y = client->strut.left == 0 ? 0 : screen->geometry.height - 1;
+	client->strut.right_start_y = 0;
+	client->strut.right_end_y = client->strut.right == 0 ? 0 : screen->geometry.height - 1;
+	client->strut.top_start_x = 0;
+	client->strut.top_end_x = client->strut.top == 0 ? 0 : screen->geometry.width - 1;
+	client->strut.bottom_start_x = 0;
+	client->strut.bottom_end_x = client->strut.bottom == 0 ? 0 : screen->geometry.width - 1;
+
+	return True;
+}
+
+Bool
+ewmh_get_net_wm_strut_partial(state_t *state, client_t *client)
+{
+	int count;
+	unsigned char *output;
+
+	count = x_get_property(
+			state->display,
+			client->window,
+			state->ewmh->atoms[_NET_WM_STRUT_PARTIAL],
+			XA_CARDINAL,
+			32L,
+			&output);
+	if (count < 12) {
+		return False;
+	}
+
+	client->strut.left = ((long *)output)[0];
+	client->strut.right = ((long *)output)[1];
+	client->strut.top = ((long *)output)[2];
+	client->strut.bottom = ((long *)output)[3];
+
+	client->strut.left_start_y = ((long *)output)[4];
+	client->strut.left_end_y = ((long *)output)[5];
+	client->strut.right_start_y = ((long *)output)[6];
+	client->strut.right_end_y = ((long *)output)[7];
+	client->strut.top_start_x = ((long *)output)[8];
+	client->strut.top_end_x = ((long *)output)[9];
+	client->strut.bottom_start_x = ((long *)output)[10];
+	client->strut.bottom_end_x = ((long *)output)[11];
+
+	return True;
 }
 
 void
@@ -105,6 +177,10 @@ ewmh_handle_property(state_t *state, client_t *client, Atom type)
 {
 	if (type == state->ewmh->atoms[_NET_WM_NAME]) {
 		client_update_wm_name(state, client);
+	} else if (type == state->ewmh->atoms[_NET_WM_STRUT]) {
+		ewmh_get_net_wm_strut(state, client);
+	} else if (type == state->ewmh->atoms[_NET_WM_STRUT_PARTIAL]) {
+		ewmh_get_net_wm_strut_partial(state, client);
 	}
 }
 
@@ -136,6 +212,8 @@ ewmh_init(state_t *state)
 		"_NET_WM_STATE_SKIP_PAGER",
 		"_NET_WM_STATE_SKIP_TASKBAR",
 		"_NET_WM_STATE_STICKY",
+		"_NET_WM_STRUT",
+		"_NET_WM_STRUT_PARTIAL",
 		"_NET_WM_WINDOW_TYPE",
 		"_NET_WM_WINDOW_TYPE_DOCK",
 		"_NET_WM_WINDOW_TYPE_DESKTOP",

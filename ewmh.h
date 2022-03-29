@@ -29,6 +29,8 @@ enum _ewmh_t {
 	_NET_WM_STATE_SKIP_PAGER,
 	_NET_WM_STATE_SKIP_TASKBAR,
 	_NET_WM_STATE_STICKY,
+	_NET_WM_STRUT,
+	_NET_WM_STRUT_PARTIAL,
 
 	_NET_WM_WINDOW_TYPE,
 	_NET_WM_WINDOW_TYPE_DOCK,
@@ -51,12 +53,29 @@ typedef struct ewmh_t {
 	Atom atoms[EWMH_NITEMS];
 } ewmh_t;
 
+typedef struct strut_t {
+	long left;
+	long right;
+	long top;
+	long bottom;
+	long left_start_y;
+	long left_end_y;
+	long right_start_y;
+	long right_end_y;
+	long top_start_x;
+	long top_end_x;
+	long bottom_start_x;
+	long bottom_end_x;
+} strut_t;
+
 struct client_t;
 struct state_t;
 
 void ewmh_free(ewmh_t *);
 Bool ewmh_get_net_wm_desktop(struct state_t *, struct client_t *, long *);
 Atom *ewmh_get_net_wm_state(struct state_t *, struct client_t *, int *);
+Bool ewmh_get_net_wm_strut(struct state_t *, struct client_t *);
+Bool ewmh_get_net_wm_strut_partial(struct state_t *, struct client_t *);
 void ewmh_handle_net_wm_state_message(struct state_t *, struct client_t *, int, Atom, Atom);
 void ewmh_handle_property(struct state_t *, struct client_t *, Atom);
 ewmh_t *ewmh_init(struct state_t *);

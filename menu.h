@@ -18,6 +18,10 @@ typedef struct menu_item_t {
 	void *context;
 
 	char *text;
+	char *detail;
+
+	int text_width;
+	int detail_width;
 } menu_item_t;
 
 typedef struct menu_t {
@@ -48,7 +52,7 @@ typedef struct menu_t {
 	menu_item_t *visible;
 } menu_t;
 
-void menu_add(menu_t *, void *, Bool, char *);
+void menu_add(menu_t *, void *, Bool, char *, char *);
 void *menu_filter(menu_t *);
 void menu_free(menu_t *);
 menu_t *menu_init(struct state_t *, struct screen_t *, char *, Bool);

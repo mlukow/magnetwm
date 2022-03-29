@@ -3,6 +3,7 @@
 
 #include <X11/Xlib.h>
 
+#include "ewmh.h"
 #include "queue.h"
 #include "xutils.h"
 
@@ -63,6 +64,7 @@ typedef struct client_t {
 
 	geometry_t geometry;
 	geometry_t geometry_saved;
+	strut_t strut;
 } client_t;
 
 void client_activate(struct state_t *, client_t *, Bool);

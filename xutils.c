@@ -34,6 +34,8 @@ x_animate(Display *display, Window window, geometry_t from, geometry_t to, doubl
 		XFlush(display);
 		usleep(time);
 	}
+
+	XMoveResizeWindow(display, window, to.x, to.y, to.width, to.height);
 }
 
 Bool
@@ -99,65 +101,3 @@ x_send_message(Display *display, Window window, Atom type, Atom data, Time time)
 
 	XSendEvent(display, window, False, NoEventMask, (XEvent *)&event);
 }
-
-/*
-void
-x_ewmh_set_client_list(state_t *state)
-{
-	client_t *client;
-	group_t *group;
-	int count = 0;
-	Window *windows = NULL;
-
-	TAILQ_FOREACH(group, &state->groups, entry) {
-		TAILQ_FOREACH(client, &group->clients, entry) {
-			if (count == 0) {
-				windows = calloc(1, sizeof(Window));
-			} else {
-				windows = realloc(windows, (count + 1) * sizeof(Window));
-			}
-			windows[count++] = client->window;
-		}
-	}
-
-	XChangeProperty(
-			state->display,
-			state->root,
-			state->atoms[_NET_CLIENT_LIST],
-			XA_WINDOW,
-			32,
-			PropModeReplace,
-			(unsigned char *)windows,
-			count);
-}
-
-void
-x_ewmh_set_client_list_stacking(state_t *state)
-{
-	client_t *client;
-	group_t *group;
-	int count = 0;
-	Window *windows = NULL;
-
-	TAILQ_FOREACH_REVERSE(group, &state->groups, group_q, entry) {
-		TAILQ_FOREACH_REVERSE(client, &group->clients, client_q, entry) {
-			if (count == 0) {
-				windows = calloc(1, sizeof(Window));
-			} else {
-				windows = realloc(windows, (count + 1) * sizeof(Window));
-			}
-			windows[count++] = client->window;
-		}
-	}
-
-	XChangeProperty(
-			state->display,
-			state->root,
-			state->atoms[_NET_CLIENT_LIST_STACKING],
-			XA_WINDOW,
-			32,
-			PropModeReplace,
-			(unsigned char *)windows,
-			count);
-}
-*/

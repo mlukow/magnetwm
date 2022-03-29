@@ -64,6 +64,7 @@ static const struct {
 	{ FUNC_CC(window-close, window_close, 0) },
 	{ FUNC_CC(window-cycle, window_cycle, 0) },
 	{ FUNC_CC(window-fullscreen, window_fullscreen, 0) },
+	{ FUNC_CC(window-hide, window_hide, 0) },
 	{ FUNC_CC(window-maximize, window_maximize, 0) },
 	{ FUNC_CC(window-rcycle, window_cycle, 1) },
 	{ FUNC_CC(window-move, window_move, 0) },
@@ -97,6 +98,7 @@ static const struct {
 	{ FUNC_CC(window-tile-up-third-left-third, window_tile, DIRECTION_UP_THIRD | DIRECTION_LEFT_THIRD) },
 	{ FUNC_CC(window-tile-up-third-right, window_tile, DIRECTION_UP_THIRD | DIRECTION_RIGHT) },
 	{ FUNC_CC(window-tile-up-third-right-third, window_tile, DIRECTION_UP_THIRD | DIRECTION_RIGHT_THIRD) },
+	{ FUNC_CC(windows, windows, 0) },
 	{ FUNC_GC(quit, wm_state, 3) },
 	{ FUNC_GC(restart, wm_state, 2) },
 };
@@ -149,11 +151,11 @@ static config_t *config;
 %token ERROR
 %token FONT
 %token IGNORE
-%token MARGIN
 %token MENUBACKGROUND
 %token MENUFOREGROUND
 %token MENUINPUT
 %token MENUITEM
+%token MENUITEMDETAIL
 %token MENUPROMPT
 %token MENUSELECTIONBACKGROUND
 %token MENUSELECTIONFOREGROUND
@@ -229,6 +231,10 @@ fonts	: MENUINPUT STRING {
 			 free(config->fonts[FONT_MENU_ITEM]);
 			 config->fonts[FONT_MENU_ITEM] = $2;
 		}
+		| MENUITEMDETAIL STRING {
+			 free(config->fonts[FONT_MENU_ITEM_DETAIL]);
+			 config->fonts[FONT_MENU_ITEM_DETAIL] = $2;
+		}
 		;
 
 string	: string STRING {
@@ -290,12 +296,6 @@ main	: ANIMATETRANSITIONS yesno {
 		| IGNORE STRING {
 			config_ignore(config, $2);
 			free($2);
-		}
-		| MARGIN NUMBER NUMBER NUMBER NUMBER {
-			config->margin.top = $2;
-			config->margin.bottom = $3;
-			config->margin.left = $4;
-			config->margin.right = $5;
 		}
 		;
 
@@ -391,11 +391,11 @@ lookup(char *s)
 		{ "command", COMMAND },
 		{ "font", FONT },
 		{ "ignore", IGNORE },
-		{ "margin", MARGIN },
 		{ "menu-background", MENUBACKGROUND },
 		{ "menu-foreground", MENUFOREGROUND },
 		{ "menu-input", MENUINPUT },
 		{ "menu-item", MENUITEM },
+		{ "menu-item-detail", MENUITEMDETAIL },
 		{ "menu-prompt", MENUPROMPT },
 		{ "menu-selection-background", MENUSELECTIONBACKGROUND },
 		{ "menu-selection-foreground", MENUSELECTIONFOREGROUND },
@@ -763,15 +763,11 @@ config_init(char *path)
 
 	config->fonts[FONT_MENU_INPUT] = strdup("sans-serif:pixelsize=14:bold");
 	config->fonts[FONT_MENU_ITEM] = strdup("sans-serif:pixelsize=14:bold");
+	config->fonts[FONT_MENU_ITEM_DETAIL] = strdup("sans-serif:pixelsize=14:italic");
 
 	config->animate_transitions = False;
 	config->animation_duration = 0.1;
 	config->border_width = 1;
-
-	config->margin.top = 0;
-	config->margin.bottom = 0;
-	config->margin.left = 0;
-	config->margin.right = 0;
 
 	TAILQ_INIT(&config->commands);
 	TAILQ_INIT(&config->keybindings);

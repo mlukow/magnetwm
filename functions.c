@@ -23,9 +23,11 @@ extern sig_atomic_t wm_state;
 void
 function_group_cycle(state_t *state, void *context, long flag)
 {
+	char detail[BUFSIZ];
 	client_t *client;
 	desktop_t *desktop;
 	group_t *current, *group;
+	int hidden, visible;
 	menu_t *menu;
 	screen_t *screen = (screen_t *)context;
 
@@ -33,8 +35,22 @@ function_group_cycle(state_t *state, void *context, long flag)
 	menu = menu_init(state, screen, NULL, True);
 
 	TAILQ_FOREACH_REVERSE(group, &desktop->groups, group_q, entry) {
-		if (group_can_activate(group)) {
-			menu_add(menu, group, 0, group->name);
+		if (!group_can_activate(group)) {
+			continue;
+		}
+
+		hidden = visible = 0;
+		TAILQ_FOREACH(client, &group->clients, entry) {
+			if (client->flags & CLIENT_HIDDEN) {
+				hidden++;
+			} else {
+				visible++;
+			}
+		}
+
+		if (visible > 0) {
+			sprintf(detail, "(%d window%s)", hidden + visible, hidden + visible == 1 ? "" : "s");
+			menu_add(menu, group, 0, group->name, detail);
 		}
 	}
 
@@ -60,7 +76,7 @@ function_menu_command(state_t *state, void *context, long flag)
 	menu = menu_init(state, screen, "Application", False);
 
 	TAILQ_FOREACH(command, &state->config->commands, entry) {
-		menu_add(menu, command, 1, command->name);
+		menu_add(menu, command, 1, command->name, NULL);
 	}
 
 	command = (command_t *)menu_filter(menu);
@@ -118,7 +134,7 @@ function_menu_exec(state_t *state, void *context, long flag)
 			}
 
 			if (access(tpath, X_OK) == 0) {
-				menu_add(menu, dp, 1, dp->d_name);
+				menu_add(menu, dp, 1, dp->d_name, NULL);
 			}
 		}
 
@@ -207,10 +223,18 @@ function_window_fullscreen(struct state_t *state, void *context, long flag)
 }
 
 void
+function_window_hide(struct state_t *state, void *context, long flag)
+{
+	client_t *client = (client_t *)context;
+
+	client_hide(state, client);
+}
+
+void
 function_window_maximize(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t from, to;
+	geometry_t from, screen_area, to;
 	screen_t *screen;
 
 	if (client->flags & CLIENT_FREEZE) {
@@ -226,11 +250,13 @@ function_window_maximize(struct state_t *state, void *context, long flag)
 		} else {
 			client->geometry_saved = client->geometry;
 
+			screen_area = screen_available_area(screen);
+
 			from = client->geometry;
-			to.x = screen->geometry.x;
-			to.y = screen->geometry.y + state->config->margin.top;
-			to.width = screen->geometry.width - 2 * client->border_width;
-			to.height = screen->geometry.height - 2 * client->border_width - state->config->margin.top;
+			to.x = screen_area.x;
+			to.y = screen_area.y/* + state->config->margin.top*/;
+			to.width = screen_area.width - 2 * client->border_width;
+			to.height = screen_area.height - 2 * client->border_width/* - state->config->margin.top*/;
 		}
 
 		x_animate(state->display, client->window, from, to, state->config->animation_duration);
@@ -243,6 +269,7 @@ void
 function_window_move(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
+	geometry_t screen_area;
 	int move = 1, result, x, y;
 	screen_t *screen;
 	Time time = 0;
@@ -267,6 +294,8 @@ function_window_move(struct state_t *state, void *context, long flag)
 	}
 
 	client->geometry_saved = client->geometry;
+	screen = client->group->desktop->screen;
+	screen_area = screen_available_area(screen);
 
 	while (move) {
 		XMaskEvent(state->display, ButtonPressMask | ButtonReleaseMask | PointerMotionMask, &event);
@@ -280,8 +309,8 @@ function_window_move(struct state_t *state, void *context, long flag)
 
 				client->geometry.x += event.xmotion.x_root - x;
 				client->geometry.y += event.xmotion.y_root - y;
-				if (client->geometry.y < client->group->desktop->screen->geometry.y + state->config->margin.top) {
-					client->geometry.y = client->group->desktop->screen->geometry.y + state->config->margin.top;
+				if (client->geometry.y < screen_area.y) {
+					client->geometry.y = screen_area.y;
 				}
 
 				x = event.xmotion.x_root;
@@ -447,45 +476,46 @@ void
 function_window_tile(state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t geometry;
+	geometry_t geometry, screen_area;
 	screen_t *screen;
 
 	screen = client->group->desktop->screen;
+	screen_area = screen_available_area(screen);
 
 	client->geometry_saved = client->geometry;
 
 	if (flag & DIRECTION_UP) {
-		geometry.y = screen->geometry.y + state->config->margin.top;
-		geometry.height = (screen->geometry.height - state->config->margin.top) / 2 - 2 * client->border_width;
+		geometry.y = screen_area.y;
+		geometry.height = screen_area.height / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_UP_THIRD) {
-		geometry.y = screen->geometry.y + state->config->margin.top;
-		geometry.height = (screen->geometry.height - state->config->margin.top) / 3 - 2 * client->border_width;
+		geometry.y = screen_area.y;
+		geometry.height = screen_area.height / 3 - 2 * client->border_width;
 	} else if (flag & DIRECTION_DOWN) {
-		geometry.y = screen->geometry.y + (screen->geometry.height - state->config->margin.top) / 2 + state->config->margin.top;
-		geometry.height = (screen->geometry.height - state->config->margin.top) / 2 - 2 * client->border_width;
+		geometry.y = screen_area.y + screen_area.height / 2;
+		geometry.height = screen_area.height / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_DOWN_THIRD) {
-		geometry.y = screen->geometry.y + screen->geometry.height - (screen->geometry.height - state->config->margin.top) / 3;
-		geometry.height = (screen->geometry.height - state->config->margin.top) / 3 - 2 * client->border_width;
+		geometry.y = screen_area.y + screen_area.height - screen_area.height / 3;
+		geometry.height = screen_area.height / 3 - 2 * client->border_width;
 	} else {
-		geometry.y = screen->geometry.y + state->config->margin.top;
-		geometry.height = screen->geometry.height - 2 * client->border_width - state->config->margin.top;
+		geometry.y = screen_area.y;
+		geometry.height = screen_area.height - 2 * client->border_width;
 	}
 
 	if (flag & DIRECTION_LEFT) {
-		geometry.x = screen->geometry.x;
-		geometry.width = screen->geometry.width / 2 - 2 * client->border_width;
+		geometry.x = screen_area.x;
+		geometry.width = screen_area.width / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_LEFT_THIRD) {
-		geometry.x = screen->geometry.x;
-		geometry.width = screen->geometry.width / 3 - 2 * client->border_width;
+		geometry.x = screen_area.x;
+		geometry.width = screen_area.width / 3 - 2 * client->border_width;
 	} else if (flag & DIRECTION_RIGHT) {
-		geometry.x = screen->geometry.x + screen->geometry.width / 2;
-		geometry.width = screen->geometry.width / 2 - 2 * client->border_width;
+		geometry.x = screen_area.x + screen_area.width / 2;
+		geometry.width = screen_area.width / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_RIGHT_THIRD) {
-		geometry.x = screen->geometry.x + screen->geometry.width - screen->geometry.width / 3;
-		geometry.width = screen->geometry.width / 3 - 2 * client->border_width;
+		geometry.x = screen_area.x + screen_area.width - screen_area.width / 3;
+		geometry.width = screen_area.width / 3 - 2 * client->border_width;
 	} else {
-		geometry.x = screen->geometry.x;
-		geometry.width = screen->geometry.width - 2 * client->border_width;
+		geometry.x = screen_area.x;
+		geometry.width = screen_area.width - 2 * client->border_width;
 	}
 
 	if (state->config->animate_transitions) {
@@ -494,6 +524,37 @@ function_window_tile(state_t *state, void *context, long flag)
 
 	client->geometry = geometry;
 	client_move_resize(state, client, True);
+}
+
+void
+function_windows(state_t *state, void *context, long flag)
+{
+	client_t *client = (client_t *)context;
+	menu_t *menu;
+	screen_t *screen;
+
+	screen = client->group->desktop->screen;
+	menu = menu_init(state, screen, NULL, False);
+
+	TAILQ_FOREACH(client, &client->group->clients, entry) {
+		if (client->flags & CLIENT_HIDDEN) {
+			menu_add(menu, client, 0, client->name, "(Hidden)");
+		} else {
+			menu_add(menu, client, 0, client->name, NULL);
+		}
+	}
+
+	client = (client_t *)menu_filter(menu);
+
+	if (client) {
+		if (client->flags & CLIENT_HIDDEN) {
+			client_show(state, client);
+		}
+
+		client_activate(state, client, True);
+	}
+
+	menu_free(menu);
 }
 
 void

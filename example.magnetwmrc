@@ -1,12 +1,12 @@
 border-width		1
 animate-transitions	yes
 animation-duration	100
-margin		32	0	0	0
 
 ignore		Polybar
 
 color		border-active			rgb:00/ff/00
-color		border-inactive			rgb:00/00/ff
+#color		border-inactive			rgb:00/00/ff
+color		border-inactive			rgb:6a/6a/6a
 color		border-urgent			rgb:ff/00/00
 color		menu-foreground			rgb:ff/ff/ff
 color		menu-background			rgb:00/00/00
@@ -15,7 +15,8 @@ color		menu-selection-background	rgb:00/00/ff
 color		menu-separator			rgb:54/53/51
 
 font		menu-item			"Ubuntu Mono:size=13"
-font		menu-input			"Ubuntu Mono:size=18"
+font		menu-item-detail	"Ubuntu Mono:size=13:italic"
+font		menu-input			"Ubuntu Mono:size=18:bold"
 
 command		Chrome				"/opt/google/chrome/google-chrome --ignore-gpu-blocklist --enable-gpu-rasterizatin --enable-zero-copy --disable-gpu-driver-bug-worksarounds --ozone-platform-hint=auto"
 command		Spotify				"spotify"
@@ -25,6 +26,7 @@ bind-key	CMS-q				quit
 bind-key	CMS-r				restart
 bind-key	M-Tab				group-cycle
 bind-key	M-q				window-close
+bind-key	M-m				window-hide
 bind-key	M-less				window-cycle
 bind-key	MS-less				window-rcycle
 bind-key	M-space				menu-exec
@@ -53,6 +55,7 @@ bind-key	CM4-j				window-move-to-screen-below
 bind-key	CM4-k				window-move-to-screen-above
 bind-key	MS-BackSpace			window-restore
 bind-key	M-t				terminal
+bind-key	MS-w				windows
 
 bind-mouse	M-1				window-move
 bind-mouse	M-3				window-resize

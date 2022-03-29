@@ -60,6 +60,43 @@ screen_adopt(state_t *state, screen_t *screen, client_t *client)
 	}
 }
 
+geometry_t
+screen_available_area(screen_t *screen)
+{
+	client_t *client;
+	geometry_t geometry = screen->geometry;
+	group_t *group;
+	int i;
+
+	for (i = 0; i < screen->desktop_count; i++) {
+		TAILQ_FOREACH(group, &screen->desktops[i]->groups, entry) {
+			TAILQ_FOREACH(client, &group->clients, entry) {
+				if (client->strut.top > geometry.y) {
+					long difference = client->strut.top - geometry.y;
+					geometry.height -= difference;
+					geometry.y += difference;
+				}
+
+				if (screen->geometry.height - client->strut.bottom < geometry.y + geometry.height) {
+					geometry.height -= (geometry.y + geometry.height - client->strut.bottom);
+				}
+
+				if (client->strut.left > geometry.x) {
+					long difference = client->strut.left - geometry.x;
+					geometry.width -= difference;
+					geometry.x += difference;
+				}
+
+				if (screen->geometry.width - client->strut.right < geometry.x + geometry.width) {
+					geometry.width -= (geometry.x + geometry.width - client->strut.right);
+				}
+			}
+		}
+	}
+
+	return geometry;
+}
+
 screen_t *
 screen_find_active(state_t *state)
 {

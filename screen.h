@@ -29,6 +29,7 @@ typedef struct screen_t {
 
 void screen_activate(struct state_t *, screen_t *);
 void screen_adopt(struct state_t *, screen_t *, struct client_t *);
+geometry_t screen_available_area(screen_t *);
 screen_t *screen_find_active(struct state_t *);
 screen_t *screen_find_by_name(struct state_t *, char *);
 screen_t *screen_find_above(struct state_t *, screen_t *);

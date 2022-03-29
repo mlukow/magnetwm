@@ -44,14 +44,37 @@ int menu_move_right(menu_t *);
 int menu_move_up(menu_t *);
 
 void
-menu_add(menu_t *menu, void *context, Bool sorted, char *text)
+menu_add(menu_t *menu, void *context, Bool sorted, char *text, char *detail)
 {
 	int cmp;
 	menu_item_t *current, *item;
+	XGlyphInfo extents;
+
+	XftTextExtentsUtf8(
+			menu->state->display,
+			menu->state->fonts[FONT_MENU_ITEM],
+			(const FcChar8 *)text,
+			strlen(text),
+			&extents);
 
 	item = malloc(sizeof(menu_item_t));
 	item->context = context;
 	item->text = strdup(text);
+	item->text_width = extents.width;
+
+	if (detail) {
+		XftTextExtentsUtf8(
+				menu->state->display,
+				menu->state->fonts[FONT_MENU_ITEM_DETAIL],
+				(const FcChar8 *)detail,
+				strlen(detail),
+				&extents);
+		item->detail = strdup(detail);
+		item->detail_width = extents.width;
+	} else {
+		item->detail = NULL;
+		item->detail_width = 0;
+	}
 
 	if (sorted) {
 		TAILQ_FOREACH(current, &menu->items, item) {
@@ -123,6 +146,17 @@ menu_draw_selection(menu_t *menu, int entry)
 			menu->offset + menu->padding + entry * (font->height + 1) + font->ascent,
 			(const FcChar8 *)item->text,
 			strlen(item->text));
+
+	if (item->detail) {
+		XftDrawStringUtf8(
+				menu->draw,
+				&menu->state->colors[COLOR_MENU_FOREGROUND],
+				menu->state->fonts[FONT_MENU_ITEM_DETAIL],
+				menu->geometry.width - menu->padding - item->detail_width,
+				menu->offset + menu->padding + entry * (font->height + 1) + font->ascent,
+				(const FcChar8 *)item->detail,
+				strlen(item->detail));
+	}
 }
 
 void
@@ -188,6 +222,18 @@ menu_draw(menu_t *menu)
 				y,
 				(const FcChar8 *)item->text,
 				strlen(item->text));
+
+		if (item->detail) {
+			XftDrawStringUtf8(
+					menu->draw,
+					&menu->state->colors[COLOR_MENU_FOREGROUND],
+					menu->state->fonts[FONT_MENU_ITEM_DETAIL],
+					menu->geometry.width - menu->padding - item->detail_width,
+					y,
+					(const FcChar8 *)item->detail,
+					strlen(item->detail));
+		}
+
 		item = TAILQ_NEXT(item, result);
 		i++;
 	}
@@ -201,14 +247,34 @@ void *
 menu_filter(menu_t *menu)
 {
 	Bool processing = True;
-	int focusrevert, i;
+	int focusrevert, i, width;
 	menu_item_t *item;
 	Window focus;
 	XEvent event;
+	XGlyphInfo extents;
+
+	if (menu->prompt) {
+		XftTextExtentsUtf8(
+				menu->state->display,
+				menu->state->fonts[FONT_MENU_INPUT],
+				(const FcChar8 *)menu->prompt,
+				strlen(menu->prompt),
+				&extents);
+		menu->geometry.width = extents.width;
+	} else {
+		menu->geometry.width = 0;
+	}
 
 	TAILQ_FOREACH(item, &menu->items, item) {
 		TAILQ_INSERT_TAIL(&menu->results, item, result);
 		menu->count++;
+
+		width = item->text_width;
+		if (item->detail) {
+			width += menu->padding + item->detail_width;
+		}
+
+		menu->geometry.width = MAX(menu->geometry.width, width);
 	}
 
 	if (menu->cycle) {
@@ -219,7 +285,7 @@ menu_filter(menu_t *menu)
 		return NULL;
 	}
 
-	menu->geometry.width = MIN(0.3 * menu->screen->geometry.width, 650);
+	menu->geometry.width += 2 * menu->padding;
 	if (menu->prompt) {
 		menu->offset = 2 * menu->padding + menu->state->fonts[FONT_MENU_INPUT]->height + 1;
 	}

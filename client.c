@@ -35,7 +35,9 @@ client_activate(state_t *state, client_t *client, Bool requeue)
 	}
 
 	if ((client->flags & CLIENT_INPUT) || (!(client->flags & CLIENT_WM_TAKE_FOCUS))) {
-		XSetInputFocus(state->display, client->window, RevertToPointerRoot, CurrentTime);
+		if (!(client->flags & CLIENT_HIDDEN)) {
+			XSetInputFocus(state->display, client->window, RevertToPointerRoot, CurrentTime);
+		}
 	}
 
 	if (client->flags & CLIENT_WM_TAKE_FOCUS) {
@@ -101,6 +103,10 @@ void
 client_draw_border(state_t *state, client_t *client)
 {
 	unsigned long pixel;
+
+	if ((client->flags & CLIENT_IGNORE) || (client->flags & CLIENT_HIDDEN)) {
+		return;
+	}
 
 	if (client->flags & CLIENT_ACTIVE) {
 		pixel = state->colors[COLOR_BORDER_ACTIVE].pixel;
@@ -194,6 +200,7 @@ client_hide(state_t *state, client_t *client)
 
 	client->flags |= CLIENT_HIDDEN;
 	icccm_set_wm_state(state, client, IconicState);
+	ewmh_set_net_wm_state(state, client);
 }
 
 client_t *
@@ -217,9 +224,11 @@ client_init(state_t *state, Window window, Bool initial)
 			return NULL;
 		}
 
+		/*
 		if (attributes.map_state != IsViewable) {
 			return NULL;
 		}
+		*/
 	}
 
 	client = calloc(1, sizeof(client_t));
@@ -258,6 +267,9 @@ client_init(state_t *state, Window window, Bool initial)
 	screen_adopt(state, screen, client);
 
 	ewmh_restore_net_wm_state(state, client);
+	if (!ewmh_get_net_wm_strut(state, client)) {
+		ewmh_get_net_wm_strut_partial(state, client);
+	}
 
 	TAILQ_FOREACH(ignored, &state->config->ignored, entry) {
 		if (!strcmp(ignored->class_name, client->class_name)) {
@@ -399,6 +411,7 @@ client_show(state_t *state, client_t *client)
 
 	client->flags &= ~CLIENT_HIDDEN;
 	icccm_set_wm_state(state, client, NormalState);
+	ewmh_set_net_wm_state(state, client);
 	client_draw_border(state, client);
 }
 
@@ -466,6 +479,7 @@ client_toggle_hmaximize(state_t *state, client_t *client)
 void
 client_toggle_maximize(state_t *state, client_t *client)
 {
+	geometry_t screen_area;
 	screen_t *screen;
 
 	if (client->flags & CLIENT_FREEZE) {
@@ -473,6 +487,7 @@ client_toggle_maximize(state_t *state, client_t *client)
 	}
 
 	screen = client->group->desktop->screen;
+	screen_area = screen_available_area(screen);
 
 	if ((client->flags & CLIENT_MAXFLAGS) == CLIENT_MAXIMIZED) {
 		if ((client->geometry_saved.width > 0) && (client->geometry_saved.height > 0)) {
@@ -482,10 +497,10 @@ client_toggle_maximize(state_t *state, client_t *client)
 	} else {
 		client->geometry_saved = client->geometry;
 
-		client->geometry.x = screen->geometry.x;
-		client->geometry.y = screen->geometry.y + state->config->margin.top;
-		client->geometry.width = screen->geometry.width - 2 * client->border_width;
-		client->geometry.height = screen->geometry.height - 2 * client->border_width - state->config->margin.top;
+		client->geometry.x = screen_area.x;
+		client->geometry.y = screen_area.y;
+		client->geometry.width = screen_area.width - 2 * client->border_width;
+		client->geometry.height = screen_area.height - 2 * client->border_width;
 
 		client->flags |= CLIENT_MAXIMIZED;
 	}
