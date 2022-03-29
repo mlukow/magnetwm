@@ -67,32 +67,34 @@ screen_available_area(screen_t *screen)
 	geometry_t geometry = screen->geometry;
 	group_t *group;
 	int i;
+	long bottom = 0, difference, left = 0, right = 0, top = 0;
 
 	for (i = 0; i < screen->desktop_count; i++) {
 		TAILQ_FOREACH(group, &screen->desktops[i]->groups, entry) {
 			TAILQ_FOREACH(client, &group->clients, entry) {
-				if (client->strut.top > geometry.y) {
-					long difference = client->strut.top - geometry.y;
-					geometry.height -= difference;
-					geometry.y += difference;
+				if (client->strut.bottom > bottom) {
+					bottom = client->strut.bottom;
 				}
 
-				if (screen->geometry.height - client->strut.bottom < geometry.y + geometry.height) {
-					geometry.height -= (geometry.y + geometry.height - client->strut.bottom);
+				if (client->strut.left > left) {
+					left = client->strut.left;
 				}
 
-				if (client->strut.left > geometry.x) {
-					long difference = client->strut.left - geometry.x;
-					geometry.width -= difference;
-					geometry.x += difference;
+				if (client->strut.right > right) {
+					right = client->strut.right;
 				}
 
-				if (screen->geometry.width - client->strut.right < geometry.x + geometry.width) {
-					geometry.width -= (geometry.x + geometry.width - client->strut.right);
+				if (client->strut.top > top) {
+					top = client->strut.top;
 				}
 			}
 		}
 	}
+
+	geometry.x += left;
+	geometry.y += top;
+	geometry.width -= (left + right);
+	geometry.height -= (top + bottom);
 
 	return geometry;
 }
