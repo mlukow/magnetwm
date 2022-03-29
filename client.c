@@ -352,6 +352,7 @@ client_raise(state_t *state, client_t *client)
 void
 client_remove(state_t *state, client_t *client)
 {
+	Bool shouldFocus;
 	group_t *group;
 
 	/*
@@ -363,9 +364,15 @@ client_remove(state_t *state, client_t *client)
 		ewmh_set_net_active_window(state, client);
 	}
 
+	shouldFocus = !(client->flags & CLIENT_HIDDEN) && !(client->flags & CLIENT_IGNORE);
+
 	group = client->group;
 	group_unassign(client);
 	client_free(client);
+
+	if (!shouldFocus) {
+		return;
+	}
 
 	TAILQ_FOREACH_REVERSE(client, &group->clients, client_q, entry) {
 		if (!(client->flags & CLIENT_IGNORE)) {
