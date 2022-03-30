@@ -175,7 +175,7 @@ void
 function_window_center(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t geometry, screen_area;
+	geometry_t screen_area;
 	screen_t *screen;
 
 	screen = client->group->desktop->screen;
@@ -183,16 +183,8 @@ function_window_center(struct state_t *state, void *context, long flag)
 
 	client->geometry_saved = client->geometry;
 
-	geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
-	geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
-	geometry.width = client->geometry.width;
-	geometry.height = client->geometry.height;
-
-	if (state->config->animate_transitions) {
-		x_animate(state->display, client->window, client->geometry_saved, geometry, state->config->animation_duration);
-	}
-
-	client->geometry = geometry;
+	client->geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
+	client->geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
 
 	client_move_resize(state, client, True);
 }
@@ -243,32 +235,9 @@ void
 function_window_maximize(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t from, screen_area, to;
-	screen_t *screen;
 
 	if (client->flags & CLIENT_FREEZE) {
 		return;
-	}
-
-	screen = client->group->desktop->screen;
-
-	if (state->config->animate_transitions) {
-		if ((client->flags & CLIENT_MAXFLAGS) == CLIENT_MAXIMIZED) {
-			from = client->geometry;
-			to = client->geometry_saved;
-		} else {
-			client->geometry_saved = client->geometry;
-
-			screen_area = screen_available_area(screen);
-
-			from = client->geometry;
-			to.x = screen_area.x;
-			to.y = screen_area.y/* + state->config->margin.top*/;
-			to.width = screen_area.width - 2 * client->border_width;
-			to.height = screen_area.height - 2 * client->border_width/* - state->config->margin.top*/;
-		}
-
-		x_animate(state->display, client->window, from, to, state->config->animation_duration);
 	}
 
 	client_toggle_maximize(state, client);
@@ -348,7 +317,6 @@ void
 function_window_move_to_screen(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t geometry;
 	screen_t *screen = NULL;
 
 	if (flag == DIRECTION_UP) {
@@ -362,16 +330,8 @@ function_window_move_to_screen(struct state_t *state, void *context, long flag)
 	}
 
 	if (screen) {
-		geometry.x = screen->geometry.x + (client->geometry.x - client->group->desktop->screen->geometry.x);
-		geometry.y = screen->geometry.y + (client->geometry.y - client->group->desktop->screen->geometry.y);
-		geometry.width = client->geometry.width;
-		geometry.height = client->geometry.height;
-
-		if (state->config->animate_transitions) {
-			x_animate(state->display, client->window, client->geometry, geometry, state->config->animation_duration);
-		}
-
-		client->geometry = geometry;
+		client->geometry.x = screen->geometry.x + (client->geometry.x - client->group->desktop->screen->geometry.x);
+		client->geometry.y = screen->geometry.y + (client->geometry.y - client->group->desktop->screen->geometry.y);
 
 		client_move_resize(state, client, False);
 		screen_adopt(state, screen, client);
@@ -465,17 +425,9 @@ void
 function_window_restore(state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t geometry;
-	screen_t *screen;
 
 	if ((client->geometry_saved.width == 0) || (client->geometry_saved.height == 0)) {
 		return;
-	}
-
-	screen = client->group->desktop->screen;
-
-	if (state->config->animate_transitions) {
-		x_animate(state->display, client->window, client->geometry, client->geometry_saved, state->config->animation_duration);
 	}
 
 	client_restore(state, client);
@@ -485,7 +437,7 @@ void
 function_window_tile(state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t geometry, screen_area;
+	geometry_t screen_area;
 	screen_t *screen;
 
 	screen = client->group->desktop->screen;
@@ -494,44 +446,39 @@ function_window_tile(state_t *state, void *context, long flag)
 	client->geometry_saved = client->geometry;
 
 	if (flag & DIRECTION_UP) {
-		geometry.y = screen_area.y;
-		geometry.height = screen_area.height / 2 - 2 * client->border_width;
+		client->geometry.y = screen_area.y;
+		client->geometry.height = screen_area.height / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_UP_THIRD) {
-		geometry.y = screen_area.y;
-		geometry.height = screen_area.height / 3 - 2 * client->border_width;
+		client->geometry.y = screen_area.y;
+		client->geometry.height = screen_area.height / 3 - 2 * client->border_width;
 	} else if (flag & DIRECTION_DOWN) {
-		geometry.y = screen_area.y + screen_area.height / 2;
-		geometry.height = screen_area.height / 2 - 2 * client->border_width;
+		client->geometry.y = screen_area.y + screen_area.height / 2;
+		client->geometry.height = screen_area.height / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_DOWN_THIRD) {
-		geometry.y = screen_area.y + screen_area.height - screen_area.height / 3;
-		geometry.height = screen_area.height / 3 - 2 * client->border_width;
+		client->geometry.y = screen_area.y + screen_area.height - screen_area.height / 3;
+		client->geometry.height = screen_area.height / 3 - 2 * client->border_width;
 	} else {
-		geometry.y = screen_area.y;
-		geometry.height = screen_area.height - 2 * client->border_width;
+		client->geometry.y = screen_area.y;
+		client->geometry.height = screen_area.height - 2 * client->border_width;
 	}
 
 	if (flag & DIRECTION_LEFT) {
-		geometry.x = screen_area.x;
-		geometry.width = screen_area.width / 2 - 2 * client->border_width;
+		client->geometry.x = screen_area.x;
+		client->geometry.width = screen_area.width / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_LEFT_THIRD) {
-		geometry.x = screen_area.x;
-		geometry.width = screen_area.width / 3 - 2 * client->border_width;
+		client->geometry.x = screen_area.x;
+		client->geometry.width = screen_area.width / 3 - 2 * client->border_width;
 	} else if (flag & DIRECTION_RIGHT) {
-		geometry.x = screen_area.x + screen_area.width / 2;
-		geometry.width = screen_area.width / 2 - 2 * client->border_width;
+		client->geometry.x = screen_area.x + screen_area.width / 2;
+		client->geometry.width = screen_area.width / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_RIGHT_THIRD) {
-		geometry.x = screen_area.x + screen_area.width - screen_area.width / 3;
-		geometry.width = screen_area.width / 3 - 2 * client->border_width;
+		client->geometry.x = screen_area.x + screen_area.width - screen_area.width / 3;
+		client->geometry.width = screen_area.width / 3 - 2 * client->border_width;
 	} else {
-		geometry.x = screen_area.x;
-		geometry.width = screen_area.width - 2 * client->border_width;
+		client->geometry.x = screen_area.x;
+		client->geometry.width = screen_area.width - 2 * client->border_width;
 	}
 
-	if (state->config->animate_transitions) {
-		x_animate(state->display, client->window, client->geometry_saved, geometry, state->config->animation_duration);
-	}
-
-	client->geometry = geometry;
 	client_move_resize(state, client, True);
 }
 
