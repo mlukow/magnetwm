@@ -171,6 +171,8 @@ state_init(char *display_name, char *config_path)
 		return False;
 	}
 
+	XSetErrorHandler(state_error_handler);
+
 	ewmh_set_net_supported(state);
 
 	if (!state_update_screens(state)) {
@@ -202,8 +204,6 @@ state_init(char *display_name, char *config_path)
 
 	state_bind(state);
 
-	XSetErrorHandler(state_error_handler);
-
 	return state;
 }
 
@@ -221,8 +221,8 @@ state_update_clients(state_t *state)
 
 	for (i = 0; i < count; i++) {
 		client = client_init(state, windows[i], True);
-		if (client && !(client->flags & CLIENT_IGNORE) && !(client->flags & CLIENT_HIDDEN)) {
-			client_activate(state, client, True);
+		if (client && client->mapped && !(client->flags & CLIENT_IGNORE) && !(client->flags & CLIENT_HIDDEN)) {
+			client_activate(state, client, False);
 		}
 	}
 

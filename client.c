@@ -34,10 +34,8 @@ client_activate(state_t *state, client_t *client, Bool requeue)
 		}
 	}
 
-	if ((client->flags & CLIENT_INPUT) || (!(client->flags & CLIENT_WM_TAKE_FOCUS))) {
-		if (!(client->flags & CLIENT_HIDDEN)) {
-			XSetInputFocus(state->display, client->window, RevertToPointerRoot, CurrentTime);
-		}
+	if ((client->flags & CLIENT_INPUT) || !(client->flags & CLIENT_WM_TAKE_FOCUS)) {
+		XSetInputFocus(state->display, client->window, RevertToPointerRoot, CurrentTime);
 	}
 
 	if (client->flags & CLIENT_WM_TAKE_FOCUS) {
@@ -672,35 +670,57 @@ client_update_wm_hints(state_t *state, client_t *client)
 	XFree(hints);
 }
 
+Bool
+x_get_text_property(Display *display, Window window, Atom atom, char **output)
+{
+	Bool result = False;
+	char **list;
+	int nitems;
+	XTextProperty base, item;
+
+	*output = NULL;
+
+	if ((XGetTextProperty(display, window, &base, atom) == 0) || (base.nitems == 0)) {
+		return False;
+	}
+
+	if (Xutf8TextPropertyToTextList(display, &base, &list, &nitems) == Success) {
+		if (nitems > 1) {
+			if (Xutf8TextListToTextProperty(display, list, nitems, XUTF8StringStyle, &item) == Success) {
+				*output = strdup((char *)item.value);
+				XFree(item.value);
+				result = True;
+			}
+		} else if (nitems == 1) {
+			*output = strdup(*list);
+			result = True;
+		}
+
+		XFreeStringList(list);
+	}
+
+	XFree(base.value);
+
+	return result;
+}
+
 void
 client_update_wm_name(state_t *state, client_t *client)
 {
 	XTextProperty text;
 
-	/*
-	if (XGetTextProperty(state->display, client->window, &text, state->icccm->atoms[_NET_WM_NAME]) != Success) {
+	if (!x_get_text_property(state->display, client->window, state->ewmh->atoms[_NET_WM_NAME], &client->name)) {
 		if (!XGetWMName(state->display, client->window, &text)) {
 			return;
 		}
-	}
 
-	if (text.nitems == 0) {
-		if (!XGetWMName(state->display, client->window, &text)) {
-			return;
-		}
+		client->name = strdup((char *)text.value);
+		XFree(text.value);
 	}
-	*/
-	if (!XGetWMName(state->display, client->window, &text)) {
-		return;
-	}
-
-	client->name = strdup((char *)text.value);
 
 	if (client->group) {
 		if (!client->group->name || !strlen(client->group->name)) {
-			client->group->name = strdup((char *)text.value);
+			client->group->name = strdup(client->name);
 		}
 	}
-
-	XFree(text.value);
 }
