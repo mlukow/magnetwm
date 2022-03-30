@@ -101,3 +101,14 @@ x_send_message(Display *display, Window window, Atom type, Atom data, Time time)
 
 	XSendEvent(display, window, False, NoEventMask, (XEvent *)&event);
 }
+
+void
+x_set_class_hint(Display *display, Window window, char *name)
+{
+	XClassHint *hint;
+
+	hint = XAllocClassHint();
+	hint->res_name = strdup(name);
+	hint->res_class = strdup(name);XSetClassHint(display, window, hint);
+	XFree(hint);
+}

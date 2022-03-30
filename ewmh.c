@@ -1,9 +1,12 @@
+#include <unistd.h>
 #include <X11/Xatom.h>
 
 #include "client.h"
+#include "config.h"
 #include "desktop.h"
 #include "ewmh.h"
 #include "group.h"
+#include "icccm.h"
 #include "screen.h"
 #include "state.h"
 #include "xutils.h"
@@ -256,6 +259,7 @@ ewmh_init(state_t *state)
 		"_NET_WM_DESKTOP",
 		"_NET_WM_ICON",
 		"_NET_WM_NAME",
+		"_NET_WM_PID",
 		"_NET_WM_STATE",
 		"_NET_WM_STATE_DEMANDS_ATTENTION",
 		"_NET_WM_STATE_FULLSCREEN",
@@ -591,6 +595,50 @@ ewmh_set_net_supported(state_t *state)
 			PropModeReplace,
 			(unsigned char *)&state->ewmh->atoms,
 			EWMH_NITEMS);
+}
+
+void
+ewmh_set_net_supporting_wm_check(state_t *state)
+{
+	XChangeProperty(
+			state->display,
+			state->root,
+			state->ewmh->atoms[_NET_SUPPORTING_WM_CHECK],
+			XA_WINDOW,
+			32,
+			PropModeReplace,
+			(unsigned char *)&state->root,
+			1);
+}
+
+void
+ewmh_set_net_wm_name(state_t *state)
+{
+	XChangeProperty(
+			state->display,
+			state->root,
+			state->ewmh->atoms[_NET_WM_NAME],
+			state->icccm->atoms[UTF8_STRING],
+			8,
+			PropModeReplace,
+			state->config->wm_name,
+			strlen(state->config->wm_name));
+}
+
+void
+ewmh_set_net_wm_pid(state_t *state)
+{
+	long pid = getpid();
+
+	XChangeProperty(
+			state->display,
+			state->root,
+			state->ewmh->atoms[_NET_WM_PID],
+			XA_CARDINAL,
+			32,
+			PropModeReplace,
+			(unsigned char *)&pid,
+			1);
 }
 
 void

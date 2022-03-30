@@ -18,6 +18,7 @@ int x_distance(geometry_t, int, int);
 Bool x_get_pointer(Display *, Window, int *, int *);
 int x_get_property(Display *, Window, Atom, Atom, long, unsigned char **);
 void x_send_message(Display *, Window, Atom, Atom, Time);
+void x_set_class_hint(Display *, Window, char *);
 
 /*
 void x_ewmh_set_client_list(struct state_t *);

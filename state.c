@@ -185,6 +185,13 @@ state_init(char *display_name, char *config_path)
 		return NULL;
 	}
 
+	x_set_class_hint(state->display, state->root, state->config->wm_name);
+
+	ewmh_set_net_supporting_wm_check(state);
+	ewmh_set_net_wm_name(state);
+	ewmh_set_net_wm_pid(state);
+	ewmh_set_net_showing_desktop(state, False);
+
 	ewmh_set_net_number_of_desktops(state);
 	ewmh_set_net_desktop_geometry(state);
 	ewmh_set_net_desktop_names(state);

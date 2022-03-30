@@ -655,7 +655,6 @@ menu_t *
 menu_init(state_t *state, screen_t *screen, char *prompt, Bool cycle)
 {
 	menu_t *menu;
-	XClassHint *hint;
 	XGCValues values;
 
 	menu = calloc(1, sizeof(menu_t));
@@ -693,11 +692,7 @@ menu_init(state_t *state, screen_t *screen, char *prompt, Bool cycle)
 	menu->border_width = state->config->border_width;
 	menu->cycle = cycle;
 
-	hint = XAllocClassHint();
-	hint->res_name = strdup("magnetwm");
-	hint->res_class = strdup("magnetwm");
-	XSetClassHint(state->display, menu->window, hint);
-	XFree(hint);
+	x_set_class_hint(state->display, menu->window, state->config->wm_name);
 
 	return menu;
 }

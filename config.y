@@ -161,6 +161,7 @@ static config_t *config;
 %token MENUSELECTIONFOREGROUND
 %token MENUSEPARATOR
 %token NO
+%token WMNAME
 %token YES
 
 %token <v.number> NUMBER
@@ -297,6 +298,11 @@ main	: ANIMATETRANSITIONS yesno {
 			config_ignore(config, $2);
 			free($2);
 		}
+		| WMNAME STRING {
+			free(config->wm_name);
+			config->wm_name = strdup($2);
+			free($2);
+		}
 		;
 
 %%
@@ -401,6 +407,7 @@ lookup(char *s)
 		{ "menu-selection-foreground", MENUSELECTIONFOREGROUND },
 		{ "menu-separator", MENUSEPARATOR },
 		{ "no", NO },
+		{ "wm-name", WMNAME },
 		{ "yes", YES }
 	};
 	keywords_t *p;
@@ -750,6 +757,8 @@ config_init(char *path)
 	int errors = 0;
 
 	config = malloc(sizeof(config_t));
+
+	config->wm_name = strdup("MagnetWM");
 
 	config->colors[COLOR_BORDER_ACTIVE] = strdup("green");
 	config->colors[COLOR_BORDER_INACTIVE] = strdup("blue");

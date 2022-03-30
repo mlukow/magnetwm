@@ -20,6 +20,7 @@ enum _ewmh_t {
 	_NET_WM_DESKTOP,
 	_NET_WM_ICON,
 	_NET_WM_NAME,
+	_NET_WM_PID,
 
 	_NET_WM_STATE,
 	_NET_WM_STATE_DEMANDS_ATTENTION,
@@ -102,6 +103,9 @@ void ewmh_set_net_frame_extents(struct state_t *, struct client_t *);
 void ewmh_set_net_number_of_desktops(struct state_t *);
 void ewmh_set_net_showing_desktop(struct state_t *, Bool);
 void ewmh_set_net_supported(struct state_t *);
+void ewmh_set_net_supporting_wm_check(struct state_t *);
+void ewmh_set_net_wm_name(struct state_t *);
+void ewmh_set_net_wm_pid(struct state_t *);
 void ewmh_set_net_wm_state(struct state_t *, struct client_t *);
 void ewmh_set_net_workarea(struct state_t *);
 

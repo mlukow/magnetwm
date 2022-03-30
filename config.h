@@ -61,6 +61,8 @@ typedef struct ignored_t {
 } ignored_t;
 
 typedef struct config_t {
+	char *wm_name;
+
 	struct command_q commands;
 	struct binding_q keybindings;
 	struct binding_q mousebindings;
