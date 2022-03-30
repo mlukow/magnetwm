@@ -92,26 +92,13 @@ group_free(group_t *group)
 }
 
 void
-group_hide(state_t *state, group_t *group)
+group_map(state_t *state, group_t *group)
 {
 	client_t *client;
 
 	TAILQ_FOREACH(client, &group->clients, entry) {
-		if (!(client->flags & CLIENT_STICKY) && !(client->flags & CLIENT_HIDDEN)) {
-			client_deactivate(state, client);
-			client_hide(state, client);
-		}
-	}
-}
-
-void
-group_show(state_t *state, group_t *group)
-{
-	client_t *client;
-
-	TAILQ_FOREACH(client, &group->clients, entry) {
-		if (client->flags & CLIENT_HIDDEN) {
-			client_show(state, client);
+		if (!client->mapped && !(client->flags & CLIENT_HIDDEN)) {
+			client_map(state, client);
 		}
 	}
 }
@@ -130,4 +117,16 @@ group_unassign(client_t *client)
 	}
 
 	client->group = NULL;
+}
+
+void
+group_unmap(state_t *state, group_t *group)
+{
+	client_t *client;
+
+	TAILQ_FOREACH(client, &group->clients, entry) {
+		if (!(client->flags & CLIENT_STICKY) && !(client->flags & CLIENT_HIDDEN)) {
+			client_unmap(state, client);
+		}
+	}
 }

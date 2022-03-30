@@ -193,11 +193,6 @@ client_hide(state_t *state, client_t *client)
 {
 	XUnmapWindow(state->display, client->window);
 
-	if (client->flags & CLIENT_ACTIVE) {
-		client->flags &= ~CLIENT_ACTIVE;
-		ewmh_set_net_active_window(state, client);
-	}
-
 	client->flags |= CLIENT_HIDDEN;
 	icccm_set_wm_state(state, client, IconicState);
 	ewmh_set_net_wm_state(state, client);
@@ -223,12 +218,6 @@ client_init(state_t *state, Window window, Bool initial)
 		if (attributes.override_redirect) {
 			return NULL;
 		}
-
-		/*
-		if (attributes.map_state != IsViewable) {
-			return NULL;
-		}
-		*/
 	}
 
 	client = calloc(1, sizeof(client_t));
@@ -238,6 +227,12 @@ client_init(state_t *state, Window window, Bool initial)
 	client->instance_name = NULL;
 	client->border_width = state->config->border_width;
 	client->flags = 0;
+
+	if (attributes.map_state != IsViewable) {
+		client->mapped = False;
+	} else {
+		client->mapped = True;
+	}
 
 	client->geometry.x = attributes.x;
 	client->geometry.y = attributes.y;
@@ -294,6 +289,15 @@ void
 client_lower(state_t *state, client_t *client)
 {
 	XLowerWindow(state->display, client->window);
+}
+
+void
+client_map(state_t *state, client_t *client)
+{
+	XMapWindow(state->display, client->window);
+	if (!(client->flags & CLIENT_HIDDEN)) {
+		icccm_set_wm_state(state, client, NormalState);
+	}
 }
 
 void
@@ -559,6 +563,21 @@ client_toggle_vmaximize(state_t *state, client_t *client)
 	client->geometry.width = screen->geometry.height - 2 * client->border_width;
 
 	client_move_resize(state, client, False);
+	ewmh_set_net_wm_state(state, client);
+}
+
+void
+client_unmap(state_t *state, client_t *client)
+{
+	XUnmapWindow(state->display, client->window);
+
+	if (client->flags & CLIENT_ACTIVE) {
+		client->flags &= ~CLIENT_ACTIVE;
+		ewmh_set_net_active_window(state, client);
+	}
+
+	client->mapped = False;
+	icccm_set_wm_state(state, client, IconicState);
 	ewmh_set_net_wm_state(state, client);
 }
 

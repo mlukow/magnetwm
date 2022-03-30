@@ -23,8 +23,8 @@ group_t *group_assign(struct desktop_t *, struct client_t *);
 Bool group_can_activate(group_t *);
 void group_deactivate(struct state_t *, group_t *);
 void group_free(group_t *);
-void group_hide(struct state_t *, group_t *);
-void group_show(struct state_t *, group_t *);
+void group_map(struct state_t *, group_t *);
 void group_unassign(struct client_t *);
+void group_unmap(struct state_t *, group_t *);
 
 #endif /* __GROUP_H__ */

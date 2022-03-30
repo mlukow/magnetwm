@@ -58,9 +58,10 @@ typedef struct client_t {
 		float max_aspect_ratio;
 	} hints;
 
-	long flags;
+	unsigned long flags;
 	long initial_state;
 	unsigned int border_width;
+	Bool mapped;
 
 	geometry_t geometry;
 	geometry_t geometry_saved;
@@ -77,6 +78,7 @@ void client_free(client_t *);
 void client_hide(struct state_t *, client_t *);
 client_t *client_init(struct state_t *, Window, Bool);
 void client_lower(struct state_t *, client_t *);
+void client_map(struct state_t *, client_t *);
 void client_move_resize(struct state_t *, client_t *, Bool);
 client_t *client_next(client_t *);
 client_t *client_previous(client_t *);
@@ -94,6 +96,7 @@ void client_toggle_skip_taskbar(struct state_t *, client_t *);
 void client_toggle_sticky(struct state_t *, client_t *);
 void client_toggle_urgent(struct state_t *, client_t *);
 void client_toggle_vmaximize(struct state_t *, client_t *);
+void client_unmap(struct state_t *, client_t *);
 void client_update_size_hints(struct state_t *, client_t *);
 void client_update_wm_hints(struct state_t *, client_t *);
 void client_update_wm_name(struct state_t *, client_t *);

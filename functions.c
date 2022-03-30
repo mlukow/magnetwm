@@ -48,8 +48,16 @@ function_group_cycle(state_t *state, void *context, long flag)
 			}
 		}
 
-		if (visible > 0) {
-			sprintf(detail, "(%d window%s)", hidden + visible, hidden + visible == 1 ? "" : "s");
+		if (hidden + visible > 0) {
+			if (hidden > 0) {
+				if (visible > 0) {
+					sprintf(detail, "(%d visible, %d hidden)", hidden, visible);
+				} else {
+					sprintf(detail, "(%d hidden)", hidden);
+				}
+			} else {
+				sprintf(detail, "(%d visible)", visible);
+			}
 			menu_add(menu, group, 0, group->name, detail);
 		}
 	}
@@ -552,6 +560,7 @@ function_windows(state_t *state, void *context, long flag)
 			client_show(state, client);
 		}
 
+		client_raise(state, client);
 		client_activate(state, client, True);
 	}
 

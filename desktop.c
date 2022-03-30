@@ -50,11 +50,11 @@ desktop_switch_to_index(state_t *state, unsigned int index)
 	TAILQ_FOREACH(screen, &state->screens, entry) {
 		if (screen->active) {
 			TAILQ_FOREACH(group, &screen->desktops[screen->desktop_index]->groups, entry) {
-				group_hide(state, group);
+				group_unmap(state, group);
 			}
 
 			TAILQ_FOREACH(group, &screen->desktops[index - desktop_count]->groups, entry) {
-				group_show(state, group);
+				group_map(state, group);
 			}
 
 			TAILQ_FOREACH_REVERSE(group, &screen->desktops[index - desktop_count]->groups, group_q, entry) {
