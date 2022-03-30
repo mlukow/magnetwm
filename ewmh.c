@@ -129,6 +129,58 @@ ewmh_get_net_wm_strut_partial(state_t *state, client_t *client)
 }
 
 void
+ewmh_get_wm_window_type(state_t *state, client_t *client)
+{
+	Atom atom;
+	int count;
+	unsigned char *output;
+
+	count = x_get_property(
+			state->display,
+			client->window,
+			state->ewmh->atoms[_NET_WM_WINDOW_TYPE],
+			XA_ATOM,
+			64L,
+			&output);
+	if (count < 1) {
+		atom = state->ewmh->atoms[_NET_WM_WINDOW_TYPE_NORMAL];
+	} else {
+		atom = ((Atom *)output)[0];
+		free(output);
+	}
+
+	if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_DESKTOP]) {
+		client->type = CLIENT_TYPE_DESKTOP;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
+		client->type = CLIENT_TYPE_DOCK;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_TOOLBAR]) {
+		client->type = CLIENT_TYPE_TOOLBAR;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_MENU]) {
+		client->type = CLIENT_TYPE_MENU;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_UTILITY]) {
+		client->type = CLIENT_TYPE_UTILITY;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_SPLASH]) {
+		client->type = CLIENT_TYPE_SPLASH;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_DIALOG]) {
+		client->type = CLIENT_TYPE_DIALOG;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_DROPDOWN_MENU]) {
+		client->type = CLIENT_TYPE_DROPDOWN_MENU;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_POPUP_MENU]) {
+		client->type = CLIENT_TYPE_POPUP_MENU;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_TOOLTIP]) {
+		client->type = CLIENT_TYPE_TOOLTIP;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_NOTIFICATION]) {
+		client->type = CLIENT_TYPE_NOTIFICATION;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_COMBO]) {
+		client->type = CLIENT_TYPE_COMBO;
+	} else if (atom == state->ewmh->atoms[_NET_WM_WINDOW_TYPE_DND]) {
+		client->type = CLIENT_TYPE_DND;
+	} else {
+		client->type = CLIENT_TYPE_NORMAL;
+	}
+}
+
+void
 ewmh_handle_net_wm_state_message(state_t *state, client_t *client, int action, Atom first, Atom second)
 {
 	unsigned int i;
@@ -196,6 +248,7 @@ ewmh_init(state_t *state)
 		"_NET_DESKTOP_GEOMETRY",
 		"_NET_DESKTOP_NAMES",
 		"_NET_DESKTOP_VIEWPORT",
+		"_NET_FRAME_EXTENTS",
 		"_NET_NUMBER_OF_DESKTOPS",
 		"_NET_SHOWING_DESKTOP",
 		"_NET_SUPPORTED",
@@ -215,12 +268,20 @@ ewmh_init(state_t *state)
 		"_NET_WM_STRUT",
 		"_NET_WM_STRUT_PARTIAL",
 		"_NET_WM_WINDOW_TYPE",
-		"_NET_WM_WINDOW_TYPE_DOCK",
 		"_NET_WM_WINDOW_TYPE_DESKTOP",
-		"_NET_WM_WINDOW_TYPE_NOTIFICATION",
-		"_NET_WM_WINDOW_TYPE_DIALOG",
-		"_NET_WM_WINDOW_TYPE_UTILITY",
+		"_NET_WM_WINDOW_TYPE_DOCK",
 		"_NET_WM_WINDOW_TYPE_TOOLBAR",
+		"_NET_WM_WINDOW_TYPE_MENU",
+		"_NET_WM_WINDOW_TYPE_UTILITY",
+		"_NET_WM_WINDOW_TYPE_SPLASH",
+		"_NET_WM_WINDOW_TYPE_DIALOG",
+		"_NET_WM_WINDOW_TYPE_DROPDOWN_MENU",
+		"_NET_WM_WINDOW_TYPE_POPUP_MENU",
+		"_NET_WM_WINDOW_TYPE_TOOLTIP",
+		"_NET_WM_WINDOW_TYPE_NOTIFICATION",
+		"_NET_WM_WINDOW_TYPE_COMBO",
+		"_NET_WM_WINDOW_TYPE_DND",
+		"_NET_WM_WINDOW_TYPE_NORMAL",
 	};
 	ewmh_t *ewmh;
 
@@ -465,6 +526,22 @@ ewmh_set_net_desktop_viewport(state_t *state)
 	if (viewports_count > 0) {
 		free(viewports);
 	}
+}
+
+void
+ewmh_set_net_frame_extents(state_t *state, client_t *client)
+{
+	long extents[] = { client->border_width, client->border_width, client->border_width, client->border_width };
+
+	XChangeProperty(
+			state->display,
+			client->window,
+			state->ewmh->atoms[_NET_FRAME_EXTENTS],
+			XA_CARDINAL,
+			32,
+			PropModeReplace,
+			(unsigned char *)extents,
+			4);
 }
 
 void

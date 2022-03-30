@@ -116,6 +116,8 @@ client_draw_border(state_t *state, client_t *client)
 
 	XSetWindowBorderWidth(state->display, client->window, client->border_width);
 	XSetWindowBorder(state->display, client->window, pixel);
+
+	ewmh_set_net_frame_extents(state, client);
 }
 
 client_t *
@@ -260,9 +262,12 @@ client_init(state_t *state, Window window, Bool initial)
 	screen_adopt(state, screen, client);
 
 	ewmh_restore_net_wm_state(state, client);
+
 	if (!ewmh_get_net_wm_strut(state, client)) {
 		ewmh_get_net_wm_strut_partial(state, client);
 	}
+
+	ewmh_get_wm_window_type(state, client);
 
 	TAILQ_FOREACH(ignored, &state->config->ignored, entry) {
 		if (!strcmp(ignored->class_name, client->class_name)) {

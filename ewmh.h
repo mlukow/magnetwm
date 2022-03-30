@@ -12,6 +12,7 @@ enum _ewmh_t {
 	_NET_DESKTOP_GEOMETRY,
 	_NET_DESKTOP_NAMES,
 	_NET_DESKTOP_VIEWPORT,
+	_NET_FRAME_EXTENTS,
 	_NET_NUMBER_OF_DESKTOPS,
 	_NET_SHOWING_DESKTOP,
 	_NET_SUPPORTED,
@@ -33,12 +34,20 @@ enum _ewmh_t {
 	_NET_WM_STRUT_PARTIAL,
 
 	_NET_WM_WINDOW_TYPE,
-	_NET_WM_WINDOW_TYPE_DOCK,
 	_NET_WM_WINDOW_TYPE_DESKTOP,
-	_NET_WM_WINDOW_TYPE_NOTIFICATION,
-	_NET_WM_WINDOW_TYPE_DIALOG,
-	_NET_WM_WINDOW_TYPE_UTILITY,
+	_NET_WM_WINDOW_TYPE_DOCK,
 	_NET_WM_WINDOW_TYPE_TOOLBAR,
+	_NET_WM_WINDOW_TYPE_MENU,
+	_NET_WM_WINDOW_TYPE_UTILITY,
+	_NET_WM_WINDOW_TYPE_SPLASH,
+	_NET_WM_WINDOW_TYPE_DIALOG,
+	_NET_WM_WINDOW_TYPE_DROPDOWN_MENU,
+	_NET_WM_WINDOW_TYPE_POPUP_MENU,
+	_NET_WM_WINDOW_TYPE_TOOLTIP,
+	_NET_WM_WINDOW_TYPE_NOTIFICATION,
+	_NET_WM_WINDOW_TYPE_COMBO,
+	_NET_WM_WINDOW_TYPE_DND,
+	_NET_WM_WINDOW_TYPE_NORMAL,
 
 	EWMH_NITEMS
 };
@@ -76,6 +85,7 @@ Bool ewmh_get_net_wm_desktop(struct state_t *, struct client_t *, long *);
 Atom *ewmh_get_net_wm_state(struct state_t *, struct client_t *, int *);
 Bool ewmh_get_net_wm_strut(struct state_t *, struct client_t *);
 Bool ewmh_get_net_wm_strut_partial(struct state_t *, struct client_t *);
+void ewmh_get_wm_window_type(struct state_t *, struct client_t *);
 void ewmh_handle_net_wm_state_message(struct state_t *, struct client_t *, int, Atom, Atom);
 void ewmh_handle_property(struct state_t *, struct client_t *, Atom);
 ewmh_t *ewmh_init(struct state_t *);
@@ -88,6 +98,7 @@ void ewmh_set_net_current_desktop_index(struct state_t *, long);
 void ewmh_set_net_desktop_geometry(struct state_t *);
 void ewmh_set_net_desktop_names(struct state_t *);
 void ewmh_set_net_desktop_viewport(struct state_t *);
+void ewmh_set_net_frame_extents(struct state_t *, struct client_t *);
 void ewmh_set_net_number_of_desktops(struct state_t *);
 void ewmh_set_net_showing_desktop(struct state_t *, Bool);
 void ewmh_set_net_supported(struct state_t *);

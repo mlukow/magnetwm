@@ -33,6 +33,23 @@ typedef enum client_flags_t {
 	CLIENT_MAXIMIZED = (CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED)
 } client_flags_t;
 
+typedef enum client_type_t {
+	CLIENT_TYPE_DESKTOP,
+	CLIENT_TYPE_DOCK,
+	CLIENT_TYPE_TOOLBAR,
+	CLIENT_TYPE_MENU,
+	CLIENT_TYPE_UTILITY,
+	CLIENT_TYPE_SPLASH,
+	CLIENT_TYPE_DIALOG,
+	CLIENT_TYPE_DROPDOWN_MENU,
+	CLIENT_TYPE_POPUP_MENU,
+	CLIENT_TYPE_TOOLTIP,
+	CLIENT_TYPE_NOTIFICATION,
+	CLIENT_TYPE_COMBO,
+	CLIENT_TYPE_DND,
+	CLIENT_TYPE_NORMAL
+} client_type_t;
+
 typedef struct client_t {
 	TAILQ_ENTRY(client_t) entry;
 
@@ -62,6 +79,7 @@ typedef struct client_t {
 	long initial_state;
 	unsigned int border_width;
 	Bool mapped;
+	client_type_t type;
 
 	geometry_t geometry;
 	geometry_t geometry_saved;

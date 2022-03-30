@@ -5,8 +5,7 @@ animation-duration	100
 ignore		Polybar
 
 color		border-active			rgb:00/ff/00
-#color		border-inactive			rgb:00/00/ff
-color		border-inactive			rgb:6a/6a/6a
+color		border-inactive			rgb:00/00/ff
 color		border-urgent			rgb:ff/00/00
 color		menu-foreground			rgb:ff/ff/ff
 color		menu-background			rgb:00/00/00
