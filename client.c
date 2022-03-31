@@ -364,10 +364,12 @@ client_placement(state_t *state, client_t *client)
 		if (existing) {
 			client->geometry.x = existing->geometry.x + FUZZY_DISTANCE;
 			client->geometry.y = existing->geometry.y + FUZZY_DISTANCE;
+			client->geometry.width = existing->geometry.width;
+			client->geometry.height = existing->geometry.height;
 			if ((client->geometry.x + client->geometry.width > screen_area.x + screen_area.width) ||
 					(client->geometry.y + client->geometry.height > screen_area.y + screen_area.height)) {
 
-				if (existing->geometry.x > (screen_area.x + screen_area.width) / 2) {
+				if (existing->geometry.x + existing->geometry.width / 2 > (screen_area.x + screen_area.width) / 2) {
 					rand_x_from = screen_area.x;
 					rand_x_to = screen_area.x + screen_area.width / 3;
 				} else {
@@ -375,7 +377,7 @@ client_placement(state_t *state, client_t *client)
 					rand_x_to = screen_area.x + screen_area.height;
 				}
 
-				if (existing->geometry.y > (screen_area.y + screen_area.height) / 2) {
+				if (existing->geometry.y + existing->geometry.height / 2 > (screen_area.y + screen_area.height) / 2) {
 					rand_y_from = screen_area.y;
 					rand_y_to = screen_area.y + screen_area.height / 3;
 				} else {
