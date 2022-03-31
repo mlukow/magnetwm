@@ -44,6 +44,11 @@ typedef enum {
 	FONT_NITEMS
 } font_t;
 
+typedef enum {
+	WINDOW_PLACEMENT_CASCADE,
+	WINDOW_PLACEMENT_POINTER
+} window_placement_t;
+
 typedef struct binding_t {
 	TAILQ_ENTRY(binding_t) entry;
 
@@ -74,6 +79,7 @@ typedef struct config_t {
 	Bool animate_transitions;
 	double animation_duration;
 	int border_width;
+	window_placement_t window_placement;
 } config_t;
 
 void config_free(config_t *);

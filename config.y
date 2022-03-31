@@ -146,6 +146,7 @@ static config_t *config;
 %token BORDERINACTIVE
 %token BORDERURGENT
 %token BORDERWIDTH
+%token CASCADE
 %token COLOR
 %token COMMAND
 %token ERROR
@@ -161,6 +162,8 @@ static config_t *config;
 %token MENUSELECTIONFOREGROUND
 %token MENUSEPARATOR
 %token NO
+%token POINTER
+%token WINDOWPLACEMENT
 %token WMNAME
 %token YES
 
@@ -298,6 +301,12 @@ main	: ANIMATETRANSITIONS yesno {
 			config_ignore(config, $2);
 			free($2);
 		}
+		| WINDOWPLACEMENT CASCADE {
+			config->window_placement = WINDOW_PLACEMENT_CASCADE;
+		}
+		| WINDOWPLACEMENT POINTER {
+			config->window_placement = WINDOW_PLACEMENT_POINTER;
+		}
 		| WMNAME STRING {
 			free(config->wm_name);
 			config->wm_name = strdup($2);
@@ -393,6 +402,7 @@ lookup(char *s)
 		{ "border-inactive", BORDERINACTIVE },
 		{ "border-urgent", BORDERURGENT },
 		{ "border-width", BORDERWIDTH },
+		{ "cascade", CASCADE },
 		{ "color", COLOR },
 		{ "command", COMMAND },
 		{ "font", FONT },
@@ -407,6 +417,8 @@ lookup(char *s)
 		{ "menu-selection-foreground", MENUSELECTIONFOREGROUND },
 		{ "menu-separator", MENUSEPARATOR },
 		{ "no", NO },
+		{ "pointer", POINTER },
+		{ "window-placement", WINDOWPLACEMENT },
 		{ "wm-name", WMNAME },
 		{ "yes", YES }
 	};
@@ -777,6 +789,7 @@ config_init(char *path)
 	config->animate_transitions = False;
 	config->animation_duration = 0.1;
 	config->border_width = 1;
+	config->window_placement = WINDOW_PLACEMENT_CASCADE;
 
 	TAILQ_INIT(&config->commands);
 	TAILQ_INIT(&config->keybindings);

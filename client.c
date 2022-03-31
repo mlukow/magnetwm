@@ -18,6 +18,8 @@
 
 void client_configure(state_t *, client_t *);
 void client_placement(state_t *, client_t *client);
+void client_placement_cascade(state_t *, client_t *, geometry_t);
+void client_placement_pointer(state_t *, client_t *, geometry_t);
 void client_update_class(state_t *, client_t *);
 
 void
@@ -343,9 +345,7 @@ client_next(client_t *client)
 void
 client_placement(state_t *state, client_t *client)
 {
-	client_t *existing;
 	geometry_t screen_area;
-	int rand_x_from, rand_x_to, rand_y_from, rand_y_to;
 	screen_t *screen;
 
 	srand(time(0));
@@ -356,61 +356,86 @@ client_placement(state_t *state, client_t *client)
 	if (client->hints.flags & (USPosition | PPosition)) {
 		// TODO: support hints
 	} else {
-		existing = TAILQ_LAST(&client->group->clients, client_q);
-		if (existing && (existing == client)) {
-			existing = TAILQ_PREV(client, client_q, entry);
+		if (state->config->window_placement == WINDOW_PLACEMENT_CASCADE) {
+			client_placement_cascade(state, client, screen_area);
+		} else if (state->config->window_placement == WINDOW_PLACEMENT_POINTER) {
+			client_placement_pointer(state, client, screen_area);
 		}
 
-		if (existing) {
-			client->geometry.x = existing->geometry.x + FUZZY_DISTANCE;
-			client->geometry.y = existing->geometry.y + FUZZY_DISTANCE;
-			client->geometry.width = existing->geometry.width;
-			client->geometry.height = existing->geometry.height;
-			if ((client->geometry.x + client->geometry.width > screen_area.x + screen_area.width) ||
-					(client->geometry.y + client->geometry.height > screen_area.y + screen_area.height)) {
+		if (client->geometry.x < screen_area.x) {
+			client->geometry.x = screen_area.x;
+		}
 
-				if (existing->geometry.x + existing->geometry.width / 2 > (screen_area.x + screen_area.width) / 2) {
-					rand_x_from = screen_area.x;
-					rand_x_to = screen_area.x + screen_area.width / 3;
-				} else {
-					rand_x_from = screen_area.x + screen_area.width / 3;
-					rand_x_to = screen_area.x + screen_area.height;
-				}
+		if (client->geometry.x + client->geometry.width > screen_area.x + screen_area.width) {
+			client->geometry.x = screen_area.x + screen_area.width - client->geometry.width;
+		}
 
-				if (existing->geometry.y + existing->geometry.height / 2 > (screen_area.y + screen_area.height) / 2) {
-					rand_y_from = screen_area.y;
-					rand_y_to = screen_area.y + screen_area.height / 3;
-				} else {
-					rand_y_from = screen_area.y + screen_area.height / 3;
-					rand_y_to = screen_area.y + screen_area.height;
-				}
+		if (client->geometry.y < screen_area.y) {
+			client->geometry.y = screen_area.y;
+		}
 
-				client->geometry.x = (rand() % (rand_x_to - rand_x_from)) + rand_x_from;
-				client->geometry.y = (rand() % (rand_y_to - rand_y_from)) + rand_y_from;
-
-				if (client->geometry.x < screen_area.x) {
-					client->geometry.x = screen_area.x;
-				}
-
-				if (client->geometry.x + client->geometry.width > screen_area.x + screen_area.width) {
-					client->geometry.x = screen_area.x + screen_area.width - client->geometry.width;
-				}
-
-				if (client->geometry.y < screen_area.y) {
-					client->geometry.y = screen_area.y;
-				}
-
-				if (client->geometry.y + client->geometry.height > screen_area.y + screen_area.height) {
-					client->geometry.y = screen_area.y + screen_area.height - client->geometry.height;
-				}
-			}
-		} else {
-			client->geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
-			client->geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
+		if (client->geometry.y + client->geometry.height > screen_area.y + screen_area.height) {
+			client->geometry.y = screen_area.y + screen_area.height - client->geometry.height;
 		}
 	}
 
 	client_move_resize(state, client, False);
+}
+
+void
+client_placement_cascade(state_t *state, client_t *client, geometry_t screen_area)
+{
+	client_t *existing;
+	int rand_x_from, rand_x_to, rand_y_from, rand_y_to;
+
+	existing = TAILQ_LAST(&client->group->clients, client_q);
+	if (existing && (existing == client)) {
+		existing = TAILQ_PREV(client, client_q, entry);
+	}
+
+	if (existing) {
+		client->geometry.x = existing->geometry.x + FUZZY_DISTANCE;
+		client->geometry.y = existing->geometry.y + FUZZY_DISTANCE;
+		client->geometry.width = existing->geometry.width;
+		client->geometry.height = existing->geometry.height;
+		if ((client->geometry.x + client->geometry.width > screen_area.x + screen_area.width) ||
+				(client->geometry.y + client->geometry.height > screen_area.y + screen_area.height)) {
+
+			if (existing->geometry.x + existing->geometry.width / 2 > (screen_area.x + screen_area.width) / 2) {
+				rand_x_from = screen_area.x;
+				rand_x_to = screen_area.x + screen_area.width / 3;
+			} else {
+				rand_x_from = screen_area.x + screen_area.width / 3;
+				rand_x_to = screen_area.x + screen_area.height;
+			}
+
+			if (existing->geometry.y + existing->geometry.height / 2 > (screen_area.y + screen_area.height) / 2) {
+				rand_y_from = screen_area.y;
+				rand_y_to = screen_area.y + screen_area.height / 3;
+			} else {
+				rand_y_from = screen_area.y + screen_area.height / 3;
+				rand_y_to = screen_area.y + screen_area.height;
+			}
+
+			client->geometry.x = (rand() % (rand_x_to - rand_x_from)) + rand_x_from;
+			client->geometry.y = (rand() % (rand_y_to - rand_y_from)) + rand_y_from;
+
+		}
+	} else {
+		client->geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
+		client->geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
+	}
+}
+
+void
+client_placement_pointer(state_t *state, client_t *client, geometry_t screen_area)
+{
+	int x, y;
+
+	(void)x_get_pointer(state->display, state->root, &x, &y);
+
+	client->geometry.x = x - client->geometry.width / 2 - client->border_width;
+	client->geometry.y = y - client->geometry.height / 2 - client->border_width;
 }
 
 client_t *
