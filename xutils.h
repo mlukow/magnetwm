@@ -17,6 +17,7 @@ Bool x_contains_point(geometry_t, int, int);
 int x_distance(geometry_t, int, int);
 Bool x_get_pointer(Display *, Window, int *, int *);
 int x_get_property(Display *, Window, Atom, Atom, long, unsigned char **);
+Bool x_get_text_property(Display *, Window, Atom, char **);
 void x_send_message(Display *, Window, Atom, Atom, Time);
 void x_set_class_hint(Display *, Window, char *);
 

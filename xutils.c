@@ -86,6 +86,40 @@ x_get_property(Display *display, Window window, Atom atom, Atom type, long lengt
 	return count;
 }
 
+Bool
+x_get_text_property(Display *display, Window window, Atom atom, char **output)
+{
+	Bool result = False;
+	char **list;
+	int nitems;
+	XTextProperty base, item;
+
+	*output = NULL;
+
+	if ((XGetTextProperty(display, window, &base, atom) == 0) || (base.nitems == 0)) {
+		return False;
+	}
+
+	if (Xutf8TextPropertyToTextList(display, &base, &list, &nitems) == Success) {
+		if (nitems > 1) {
+			if (Xutf8TextListToTextProperty(display, list, nitems, XUTF8StringStyle, &item) == Success) {
+				*output = strdup((char *)item.value);
+				XFree(item.value);
+				result = True;
+			}
+		} else if (nitems == 1) {
+			*output = strdup(*list);
+			result = True;
+		}
+
+		XFreeStringList(list);
+	}
+
+	XFree(base.value);
+
+	return result;
+}
+
 void
 x_send_message(Display *display, Window window, Atom type, Atom data, Time time)
 {

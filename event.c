@@ -225,6 +225,7 @@ event_handle_map_request(state_t *state, XMapRequestEvent *event)
 		screen_adopt(state, screen, client);
 	}
 
+	client->mapped = True;
 	client_show(state, client);
 
 	if (!(client->flags & CLIENT_IGNORE)) {

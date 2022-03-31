@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include <X11/Xutil.h>
 
@@ -16,6 +17,7 @@
 #include "xutils.h"
 
 void client_configure(state_t *, client_t *);
+void client_placement(state_t *, client_t *client);
 void client_update_class(state_t *, client_t *);
 
 void
@@ -228,11 +230,7 @@ client_init(state_t *state, Window window, Bool initial)
 	client->border_width = state->config->border_width;
 	client->flags = 0;
 
-	if (attributes.map_state != IsViewable) {
-		client->mapped = False;
-	} else {
-		client->mapped = True;
-	}
+	client->mapped = (attributes.map_state == IsViewable);
 
 	client->geometry.x = attributes.x;
 	client->geometry.y = attributes.y;
@@ -274,6 +272,10 @@ client_init(state_t *state, Window window, Bool initial)
 			client->flags |= CLIENT_IGNORE;
 			client->border_width = 0;
 		}
+	}
+
+	if (!initial) {
+		client_placement(state, client);
 	}
 
 	client_configure(state, client);
@@ -334,6 +336,79 @@ client_next(client_t *client)
 	}
 
 	return next;
+}
+
+#define FUZZY_DISTANCE 25
+
+void
+client_placement(state_t *state, client_t *client)
+{
+	client_t *existing;
+	geometry_t screen_area;
+	int rand_x_from, rand_x_to, rand_y_from, rand_y_to;
+	screen_t *screen;
+
+	srand(time(0));
+
+	screen = client->group->desktop->screen;
+	screen_area = screen_available_area(screen);
+
+	if (client->hints.flags & (USPosition | PPosition)) {
+		// TODO: support hints
+	} else {
+		existing = TAILQ_LAST(&client->group->clients, client_q);
+		if (existing && (existing == client)) {
+			existing = TAILQ_PREV(client, client_q, entry);
+		}
+
+		if (existing) {
+			client->geometry.x = existing->geometry.x + FUZZY_DISTANCE;
+			client->geometry.y = existing->geometry.y + FUZZY_DISTANCE;
+			if ((client->geometry.x + client->geometry.width > screen_area.x + screen_area.width) ||
+					(client->geometry.y + client->geometry.height > screen_area.y + screen_area.height)) {
+
+				if (existing->geometry.x > (screen_area.x + screen_area.width) / 2) {
+					rand_x_from = screen_area.x;
+					rand_x_to = screen_area.x + screen_area.width / 3;
+				} else {
+					rand_x_from = screen_area.x + screen_area.width / 3;
+					rand_x_to = screen_area.x + screen_area.height;
+				}
+
+				if (existing->geometry.y > (screen_area.y + screen_area.height) / 2) {
+					rand_y_from = screen_area.y;
+					rand_y_to = screen_area.y + screen_area.height / 3;
+				} else {
+					rand_y_from = screen_area.y + screen_area.height / 3;
+					rand_y_to = screen_area.y + screen_area.height;
+				}
+
+				client->geometry.x = (rand() % (rand_x_to - rand_x_from)) + rand_x_from;
+				client->geometry.y = (rand() % (rand_y_to - rand_y_from)) + rand_y_from;
+
+				if (client->geometry.x < screen_area.x) {
+					client->geometry.x = screen_area.x;
+				}
+
+				if (client->geometry.x + client->geometry.width > screen_area.x + screen_area.width) {
+					client->geometry.x = screen_area.x + screen_area.width - client->geometry.width;
+				}
+
+				if (client->geometry.y < screen_area.y) {
+					client->geometry.y = screen_area.y;
+				}
+
+				if (client->geometry.y + client->geometry.height > screen_area.y + screen_area.height) {
+					client->geometry.y = screen_area.y + screen_area.height - client->geometry.height;
+				}
+			}
+		} else {
+			client->geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
+			client->geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
+		}
+	}
+
+	client_move_resize(state, client, False);
 }
 
 client_t *
@@ -673,40 +748,6 @@ client_update_wm_hints(state_t *state, client_t *client)
 	}
 
 	XFree(hints);
-}
-
-Bool
-x_get_text_property(Display *display, Window window, Atom atom, char **output)
-{
-	Bool result = False;
-	char **list;
-	int nitems;
-	XTextProperty base, item;
-
-	*output = NULL;
-
-	if ((XGetTextProperty(display, window, &base, atom) == 0) || (base.nitems == 0)) {
-		return False;
-	}
-
-	if (Xutf8TextPropertyToTextList(display, &base, &list, &nitems) == Success) {
-		if (nitems > 1) {
-			if (Xutf8TextListToTextProperty(display, list, nitems, XUTF8StringStyle, &item) == Success) {
-				*output = strdup((char *)item.value);
-				XFree(item.value);
-				result = True;
-			}
-		} else if (nitems == 1) {
-			*output = strdup(*list);
-			result = True;
-		}
-
-		XFreeStringList(list);
-	}
-
-	XFree(base.value);
-
-	return result;
 }
 
 void
