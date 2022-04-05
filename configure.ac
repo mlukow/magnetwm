@@ -1,7 +1,12 @@
 AC_INIT([magnetwm], [0.0.1], [marcin@nerdy.cat])
-AM_INIT_AUTOMAKE([-Wall -Werror])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CC
 AC_PROG_YACC
+
+AC_CHECK_FILE([/usr/X11R6/include], [CPPFLAGS="$CPPFLAGS -I/usr/X11R6/include"])
+AC_CHECK_FILE([/usr/X11R6/lib], [LDFLAGS="$LDFLAGS -L/usr/X11R6/lib"])
+
+AC_CHECK_FUNC(strtonum, [AC_DEFINE(HAVE_STRTONUM)])
 
 AC_CHECK_HEADERS(X11/Xlib.h,LIBS="${LIBS} -lX11")
 AC_CHECK_HEADERS(X11/extensions/Xrandr.h,LIBS="${LIBS} -lXrandr")
