@@ -55,6 +55,7 @@ dkms.conf
 *.swp
 
 # Output files
+autom4te.cache/
 .deps/
 Makefile
 config.c
