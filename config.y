@@ -117,7 +117,6 @@ typedef struct {
 } YYSTYPE;
 
 char *config_bind_mask(char *, unsigned int *);
-void config_ignore(config_t *, char *);
 int findeol(void);
 int kw_cmp(const void *, const void *);
 int lgetc(int);
@@ -715,12 +714,11 @@ config_bind_mouse(config_t *config, char *bind, char *cmd)
 		}
 	}
 
-	binding = malloc(sizeof(binding_t));
-	binding->button = button;
-	binding->modifier = modifier;
-
 	for (i = 0; i < sizeof(name_to_func) / sizeof(name_to_func[0]); i++) {
 		if (!strcmp(name_to_func[i].tag, cmd)) {
+			binding = malloc(sizeof(binding_t));
+			binding->button = button;
+			binding->modifier = modifier;
 			binding->name = strdup(cmd);
 			binding->function = name_to_func[i].function;
 			binding->context = name_to_func[i].context;
@@ -822,6 +820,9 @@ config_init()
 	TAILQ_INIT(&config->ignored);
 
 	config_bind_command(config, "Terminal", "xterm");
+
+	config_bind_mouse(config, "M-1", "window-move");
+	config_bind_mouse(config, "M-3", "window-resize");
 
 	snprintf(path, BUFSIZ, "%s/.config/magnetwm/magnetwmrc", getenv("HOME"));
 	stream = fopen(path, "r");

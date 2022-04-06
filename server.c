@@ -23,6 +23,7 @@ void server_border_width(state_t *, char **);
 void server_color(state_t *, char **);
 void server_command(state_t *, char **);
 void server_font(state_t *, char **);
+void server_ignore(state_t *, char **);
 void server_wm_name(state_t *, char **);
 
 static const struct {
@@ -37,6 +38,7 @@ static const struct {
 	{ FUNC_CMD(color, 2, color) },
 	{ FUNC_CMD(command, 2, command) },
 	{ FUNC_CMD(font, 2, font) },
+	{ FUNC_CMD(ignore, 1, ignore) },
 	{ FUNC_CMD(wm-name, 1, wm_name) },
 #undef FUNC_CMD
 };
@@ -59,14 +61,18 @@ server_bind_key(state_t *state, char **argv)
 	}
 
 	if (config_bind_key(state->config, argv[0], argv[1])) {
-		XGrabKey(
-				state->display,
-				XKeysymToKeycode(state->display, binding->button),
-				binding->modifier,
-				state->root,
-				True,
-				GrabModeAsync,
-				GrabModeAsync);
+		TAILQ_FOREACH(binding, &state->config->keybindings, entry) {
+			if (!strcmp(binding->name, argv[1])) {
+				XGrabKey(
+						state->display,
+						XKeysymToKeycode(state->display, binding->button),
+						binding->modifier,
+						state->root,
+						True,
+						GrabModeAsync,
+						GrabModeAsync);
+			}
+		}
 	}
 }
 
@@ -219,6 +225,31 @@ server_free(server_t *server)
 	free(server);
 }
 
+void
+server_ignore(state_t *state, char **argv)
+{
+	client_t *client;
+	group_t *group;
+	int i;
+	screen_t *screen;
+
+	config_ignore(state->config, argv[0]);
+
+	TAILQ_FOREACH(screen, &state->screens, entry) {
+		for (i = 0; i < screen->desktop_count; i++) {
+			TAILQ_FOREACH(group, &screen->desktops[i]->groups, entry) {
+				if (!strcmp(group->name, argv[0])) {
+					TAILQ_FOREACH(client, &group->clients, entry) {
+						client->flags |= CLIENT_IGNORE;
+						client->border_width = 0;
+						client_draw_border(state, client);
+					}
+				}
+			}
+		}
+	}
+}
+
 server_t *
 server_init()
 {
@@ -235,6 +266,10 @@ server_init()
 	address.sun_family = AF_UNIX;
 	snprintf(address.sun_path, sizeof(address.sun_path), "/tmp/magnetwm%s_%i_%i-socket", host, dn, sn);
 	free(host);
+
+	if (access(address.sun_path, F_OK) == 0) {
+		unlink(address.sun_path);
+	}
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd == -1) {

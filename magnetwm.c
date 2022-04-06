@@ -74,8 +74,8 @@ main(int argc, char **argv)
 		state_flush(state);
 
 		FD_ZERO(&descriptors);
-		FD_SET(state->server->fd, &descriptors);
 		FD_SET(state->fd, &descriptors);
+		FD_SET(state->server->fd, &descriptors);
 
 		if (select(MAX(state->fd, state->server->fd) + 1, &descriptors, NULL, NULL, NULL) <= 0) {
 			continue;

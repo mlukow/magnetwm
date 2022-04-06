@@ -89,5 +89,6 @@ config_t *config_init();
 void config_bind_command(config_t *, char *, char *);
 Bool config_bind_key(config_t *, char *, char *);
 Bool config_bind_mouse(config_t *, char *, char *);
+void config_ignore(config_t *, char *);
 
 #endif /* __CONFIG_H__ */
