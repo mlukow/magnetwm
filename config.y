@@ -819,7 +819,7 @@ config_init()
 	TAILQ_INIT(&config->mousebindings);
 	TAILQ_INIT(&config->ignored);
 
-	config_bind_command(config, "Terminal", "xterm");
+	config_bind_command(config, "terminal", "xterm");
 
 	config_bind_mouse(config, "M-1", "window-move");
 	config_bind_mouse(config, "M-3", "window-resize");

@@ -197,7 +197,7 @@ function_terminal(struct state_t *state, void *context, long flag)
 	command_t *command;
 
 	TAILQ_FOREACH(command, &state->config->commands, entry) {
-		if (!strcmp(command->name, "Terminal")) {
+		if (!strcmp(command->name, "terminal")) {
 			xspawn(command->path);
 		}
 	}
