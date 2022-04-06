@@ -16,7 +16,6 @@
 #include "utils.h"
 #include "xutils.h"
 
-void client_configure(state_t *, client_t *);
 void client_placement(state_t *, client_t *client);
 void client_placement_cascade(state_t *, client_t *, geometry_t);
 void client_placement_pointer(state_t *, client_t *, geometry_t);
@@ -106,9 +105,11 @@ client_draw_border(state_t *state, client_t *client)
 {
 	unsigned long pixel;
 
+	/*
 	if ((client->flags & CLIENT_IGNORE) || (client->flags & CLIENT_HIDDEN)) {
 		return;
 	}
+	*/
 
 	if (client->flags & CLIENT_ACTIVE) {
 		pixel = state->colors[COLOR_BORDER_ACTIVE].pixel;

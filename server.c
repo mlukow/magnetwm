@@ -242,6 +242,7 @@ server_ignore(state_t *state, char **argv)
 					TAILQ_FOREACH(client, &group->clients, entry) {
 						client->flags |= CLIENT_IGNORE;
 						client->border_width = 0;
+						client_configure(state, client);
 						client_draw_border(state, client);
 					}
 				}
