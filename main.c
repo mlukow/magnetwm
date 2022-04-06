@@ -43,7 +43,7 @@ signal_handler(int signum)
 int
 main(int argc, char **argv)
 {
-	char buf[BUFSIZ], *home, *file;
+	char buf[BUFSIZ];
 	int bytes;
     state_t *state;
 	struct passwd *pw;
@@ -55,19 +55,7 @@ main(int argc, char **argv)
 
 	mbtowc(NULL, NULL, MB_CUR_MAX);
 
-	home = getenv("HOME");
-	if ((home == NULL) || (*home == '\0')) {
-		pw = getpwuid(getuid());
-		if (pw && pw->pw_dir && (*pw->pw_dir != '\0')) {
-			home = pw->pw_dir;
-		} else {
-			home = "/";
-		}
-	}
-
-	xasprintf(&file, "%s/%s", home, ".magnetwmrc");
-
-    state = state_init(NULL, file);
+    state = state_init(NULL);
     if (!state) {
         return EXIT_FAILURE;
 	}

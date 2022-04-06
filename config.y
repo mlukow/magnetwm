@@ -763,8 +763,9 @@ config_ignore(config_t *config, char *class_name)
 }
 
 config_t *
-config_init(char *path)
+config_init()
 {
+	char path[BUFSIZ];
 	FILE *stream;
 	int errors = 0;
 
@@ -798,9 +799,14 @@ config_init(char *path)
 
 	config_add_command(config, "Terminal", "xterm");
 
+	snprintf(path, BUFSIZ, "%s/.config/magnetwm/magnetwmrc", getenv("HOME"));
 	stream = fopen(path, "r");
 	if (stream == NULL) {
-		return config;
+		snprintf(path, BUFSIZ, "%s/.magnetwmrc", getenv("HOME"));
+		stream = fopen(path, "r");
+		if (stream == NULL) {
+			return config;
+		}
 	}
 
 	file = pushfile(path, stream);

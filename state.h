@@ -44,6 +44,6 @@ typedef struct state_t {
 } state_t;
 
 void state_free(state_t *);
-state_t *state_init(char *, char *);
+state_t *state_init(char *);
 
 #endif /* __STATE_H__ */

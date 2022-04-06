@@ -83,6 +83,6 @@ typedef struct config_t {
 } config_t;
 
 void config_free(config_t *);
-config_t *config_init(char *);
+config_t *config_init();
 
 #endif /* __CONFIG_H__ */

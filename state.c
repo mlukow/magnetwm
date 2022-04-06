@@ -106,7 +106,7 @@ state_free(state_t *state)
 }
 
 state_t *
-state_init(char *display_name, char *config_path)
+state_init(char *display_name)
 {
 	int error_base, i, result;
 	state_t *state;
@@ -128,7 +128,7 @@ state_init(char *display_name, char *config_path)
 	state->visual = DefaultVisual(state->display, state->primary_screen);
 	state->root = RootWindow(state->display, state->primary_screen);
 	state->fd = ConnectionNumber(state->display);
-	state->config = config_init(config_path);
+	state->config = config_init();
 
 	state->cursors[CURSOR_NORMAL] = XCreateFontCursor(state->display, XC_left_ptr);
 	state->cursors[CURSOR_MOVE] = XCreateFontCursor(state->display, XC_fleur);
