@@ -11,6 +11,7 @@
 #include "group.h"
 #include "icccm.h"
 #include "screen.h"
+#include "server.h"
 #include "state.h"
 #include "utils.h"
 #include "xutils.h"
@@ -66,6 +67,12 @@ state_error_handler(Display *display, XErrorEvent *event)
 }
 
 void
+state_flush(state_t *state)
+{
+	XFlush(state->display);
+}
+
+void
 state_free(state_t *state)
 {
 	int i;
@@ -101,6 +108,7 @@ state_free(state_t *state)
 	config_free(state->config);
 	ewmh_free(state->ewmh);
 	icccm_free(state->icccm);
+	server_free(state->server);
 
 	free(state);
 }
@@ -122,6 +130,7 @@ state_init(char *display_name)
 
 	state->ewmh = ewmh_init(state);
 	state->icccm = icccm_init(state);
+	state->server = server_init(state);
 
 	state->primary_screen = DefaultScreen(state->display);
 	state->colormap = DefaultColormap(state->display, state->primary_screen);

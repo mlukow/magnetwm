@@ -17,6 +17,7 @@ typedef enum direction_t {
 void function_group_cycle(struct state_t *, void *, long);
 void function_menu_command(struct state_t *, void *, long);
 void function_menu_exec(struct state_t *, void *, long);
+void function_menu_windows(struct state_t *, void *, long);
 void function_terminal(struct state_t *, void *, long);
 void function_window_center(struct state_t *, void *, long);
 void function_window_close(struct state_t *, void *, long);
@@ -29,7 +30,6 @@ void function_window_move_to_screen(struct state_t *, void *, long);
 void function_window_resize(struct state_t *, void *, long);
 void function_window_restore(struct state_t *, void *, long);
 void function_window_tile(struct state_t *, void *, long);
-void function_windows(struct state_t *, void *, long);
 void function_wm_state(struct state_t *, void *, long);
 
 #endif /* __FUNCTIONS_H__ */

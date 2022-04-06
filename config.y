@@ -57,8 +57,9 @@ static const struct {
 #define FUNC_SC(t, h, n) #t, function_ ## h, BINDING_CONTEXT_SCREEN, n
 #define FUNC_GC(t, h, n) #t, function_ ## h, BINDING_CONTEXT_GLOBAL, n
 	{ FUNC_SC(group-cycle, group_cycle, 0) },
-	{ FUNC_SC(menu-exec, menu_exec, 0) },
 	{ FUNC_SC(menu-command, menu_command, 0) },
+	{ FUNC_SC(menu-exec, menu_exec, 0) },
+	{ FUNC_CC(menu-windows, menu_windows, 0) },
 	{ FUNC_GC(terminal, terminal, 0) },
 	{ FUNC_CC(window-center, window_center, 0) },
 	{ FUNC_CC(window-close, window_close, 0) },
@@ -98,9 +99,11 @@ static const struct {
 	{ FUNC_CC(window-tile-up-third-left-third, window_tile, DIRECTION_UP_THIRD | DIRECTION_LEFT_THIRD) },
 	{ FUNC_CC(window-tile-up-third-right, window_tile, DIRECTION_UP_THIRD | DIRECTION_RIGHT) },
 	{ FUNC_CC(window-tile-up-third-right-third, window_tile, DIRECTION_UP_THIRD | DIRECTION_RIGHT_THIRD) },
-	{ FUNC_CC(windows, windows, 0) },
 	{ FUNC_GC(quit, wm_state, 3) },
 	{ FUNC_GC(restart, wm_state, 2) },
+#undef FUNC_CC
+#undef FUNC_SC
+#undef FUNC_GC
 };
 
 TAILQ_HEAD(files, file_t) files = TAILQ_HEAD_INITIALIZER(files);
@@ -113,10 +116,7 @@ typedef struct {
     int lineno;
 } YYSTYPE;
 
-void config_add_command(config_t *, char *, char *);
-int config_bind_key(config_t *, char *, char *);
 char *config_bind_mask(char *, unsigned int *);
-int config_bind_mouse(config_t *, char *, char *);
 void config_ignore(config_t *, char *);
 int findeol(void);
 int kw_cmp(const void *, const void *);
@@ -293,7 +293,7 @@ main	: ANIMATETRANSITIONS yesno {
 				 free($3);
 				 YYERROR;
 			 }
-			 config_add_command(config, $2, $3);
+			 config_bind_command(config, $2, $3);
 			 free($2);
 			 free($3);
 		}
@@ -609,7 +609,7 @@ nodigits:
 }
 
 void
-config_add_command(config_t *config, char *name, char *path)
+config_bind_command(config_t *config, char *name, char *path)
 {
 	command_t *command, *current, *next;
 
@@ -629,37 +629,47 @@ config_add_command(config_t *config, char *name, char *path)
 	TAILQ_INSERT_TAIL(&config->commands, command, entry);
 }
 
-int
+Bool
 config_bind_key(config_t *config, char *bind, char *cmd)
 {
 	char *key;
-	int i;
+	int button, i, modifier;
 	binding_t *binding;
 
-	if (!cmd)
-		return 0;
+	if (!cmd) {
+		return False;
+	}
 
-	binding = malloc(sizeof(binding_t));
-	key = config_bind_mask(bind, &binding->modifier);
-	binding->button = XStringToKeysym(key);
-	if (binding->button == NoSymbol) {
-		free(binding);
-		return 0;
+	key = config_bind_mask(bind, &modifier);
+	button = XStringToKeysym(key);
+
+	if (button == NoSymbol) {
+		return False;
+	}
+
+	TAILQ_FOREACH(binding, &config->keybindings, entry) {
+		if (!strcmp(binding->name, cmd)) {
+			binding->button = button;
+			binding->modifier = modifier;
+			return True;
+		}
 	}
 
 	for (i = 0; i < sizeof(name_to_func) / sizeof(name_to_func[0]); i++) {
 		if (!strcmp(name_to_func[i].tag, cmd)) {
+			binding = malloc(sizeof(binding_t));
+			binding->button = button;
+			binding->modifier = modifier;
+			binding->name = strdup(cmd);
 			binding->function = name_to_func[i].function;
 			binding->context = name_to_func[i].context;
 			binding->flag = name_to_func[i].flag;
 			TAILQ_INSERT_TAIL(&config->keybindings, binding, entry);
-			return 1;
+			return True;
 		}
 	}
 
-	free(binding);
-
-	return 0;
+	return False;
 }
 
 char *
@@ -680,37 +690,49 @@ config_bind_mask(char *name, unsigned int *mask)
 	return dash + 1;
 }
 
-int
+Bool
 config_bind_mouse(config_t *config, char *bind, char *cmd)
 {
-	char *button, *errstr;
-	int i;
+	char *key, *errstr;
+	int button, i, modifier;
 	binding_t *binding;
 
-	if (!cmd)
-		return 0;
+	if (!cmd) {
+		return False;
+	}
+
+	key = config_bind_mask(bind, &modifier);
+	button = strtonum(key, Button1, Button5, &errstr);
+	if (errstr) {
+		return False;
+	}
+
+	TAILQ_FOREACH(binding, &config->mousebindings, entry) {
+		if (!strcmp(binding->name, cmd)) {
+			binding->button = button;
+			binding->modifier = modifier;
+			return True;
+		}
+	}
 
 	binding = malloc(sizeof(binding_t));
-	button = config_bind_mask(bind, &binding->modifier);
-	binding->button = strtonum(button, Button1, Button5, &errstr);
-	if (errstr) {
-		free(binding);
-		return 0;
-	}
+	binding->button = button;
+	binding->modifier = modifier;
 
 	for (i = 0; i < sizeof(name_to_func) / sizeof(name_to_func[0]); i++) {
 		if (!strcmp(name_to_func[i].tag, cmd)) {
+			binding->name = strdup(cmd);
 			binding->function = name_to_func[i].function;
 			binding->context = name_to_func[i].context;
 			binding->flag = name_to_func[i].flag;
 			TAILQ_INSERT_TAIL(&config->mousebindings, binding, entry);
-			return 1;
+			return True;
 		}
 	}
 
 	free(binding);
 
-	return 0;
+	return False;
 }
 
 void
@@ -733,11 +755,13 @@ config_free(config_t *config)
 
 	while ((binding = TAILQ_FIRST(&config->keybindings)) != NULL) {
 		TAILQ_REMOVE(&config->keybindings, binding, entry);
+		free(binding->name);
 		free(binding);
 	}
 
 	while ((binding = TAILQ_FIRST(&config->mousebindings)) != NULL) {
 		TAILQ_REMOVE(&config->mousebindings, binding, entry);
+		free(binding->name);
 		free(binding);
 	}
 
@@ -797,7 +821,7 @@ config_init()
 	TAILQ_INIT(&config->mousebindings);
 	TAILQ_INIT(&config->ignored);
 
-	config_add_command(config, "Terminal", "xterm");
+	config_bind_command(config, "Terminal", "xterm");
 
 	snprintf(path, BUFSIZ, "%s/.config/magnetwm/magnetwmrc", getenv("HOME"));
 	stream = fopen(path, "r");

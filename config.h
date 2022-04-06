@@ -52,6 +52,7 @@ typedef enum {
 typedef struct binding_t {
 	TAILQ_ENTRY(binding_t) entry;
 
+	char *name;
 	unsigned int modifier;
 	long button;
 	long flag;
@@ -84,5 +85,9 @@ typedef struct config_t {
 
 void config_free(config_t *);
 config_t *config_init();
+
+void config_bind_command(config_t *, char *, char *);
+Bool config_bind_key(config_t *, char *, char *);
+Bool config_bind_mouse(config_t *, char *, char *);
 
 #endif /* __CONFIG_H__ */

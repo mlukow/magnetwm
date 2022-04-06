@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "event.h"
+#include "server.h"
 #include "state.h"
 #include "utils.h"
 
@@ -44,10 +45,10 @@ int
 main(int argc, char **argv)
 {
 	char buf[BUFSIZ];
+	fd_set descriptors;
 	int bytes;
     state_t *state;
 	struct passwd *pw;
-    struct pollfd pfd[1];
 
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale()) {
 		fprintf(stderr, "No locale support");
@@ -67,20 +68,26 @@ main(int argc, char **argv)
         fprintf(stderr, "Could not register signal handlers\n");
 	}
 
-    memset(&pfd, 0, sizeof(pfd));
-    pfd[0].fd = state->fd;
-    pfd[0].events = POLLIN;
-
     wm_state = RUNNING;
 
     while (wm_state == RUNNING) {
-		event_process(state);
+		state_flush(state);
 
-        if (poll(pfd, 1, -1) == -1) {
-            if (errno != EINTR) {
-                fprintf(stderr, "Could not poll\n");
-			}
-        }
+		FD_ZERO(&descriptors);
+		FD_SET(state->server->fd, &descriptors);
+		FD_SET(state->fd, &descriptors);
+
+		if (select(MAX(state->fd, state->server->fd) + 1, &descriptors, NULL, NULL, NULL) <= 0) {
+			continue;
+		}
+
+		if (FD_ISSET(state->server->fd, &descriptors)) {
+			server_process(state, state->server);
+		}
+
+		if (FD_ISSET(state->fd, &descriptors)) {
+			event_process(state);
+		}
     }
 
     state_free(state);

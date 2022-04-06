@@ -160,6 +160,38 @@ function_menu_exec(state_t *state, void *context, long flag)
 }
 
 void
+function_menu_windows(state_t *state, void *context, long flag)
+{
+	client_t *client = (client_t *)context;
+	menu_t *menu;
+	screen_t *screen;
+
+	screen = client->group->desktop->screen;
+	menu = menu_init(state, screen, NULL, False);
+
+	TAILQ_FOREACH(client, &client->group->clients, entry) {
+		if (client->flags & CLIENT_HIDDEN) {
+			menu_add(menu, client, 0, client->name, "(Hidden)");
+		} else {
+			menu_add(menu, client, 0, client->name, NULL);
+		}
+	}
+
+	client = (client_t *)menu_filter(menu);
+
+	if (client) {
+		if (client->flags & CLIENT_HIDDEN) {
+			client_show(state, client);
+		}
+
+		client_raise(state, client);
+		client_activate(state, client, True);
+	}
+
+	menu_free(menu);
+}
+
+void
 function_terminal(struct state_t *state, void *context, long flag)
 {
 	command_t *command;
@@ -480,38 +512,6 @@ function_window_tile(state_t *state, void *context, long flag)
 	}
 
 	client_move_resize(state, client, True);
-}
-
-void
-function_windows(state_t *state, void *context, long flag)
-{
-	client_t *client = (client_t *)context;
-	menu_t *menu;
-	screen_t *screen;
-
-	screen = client->group->desktop->screen;
-	menu = menu_init(state, screen, NULL, False);
-
-	TAILQ_FOREACH(client, &client->group->clients, entry) {
-		if (client->flags & CLIENT_HIDDEN) {
-			menu_add(menu, client, 0, client->name, "(Hidden)");
-		} else {
-			menu_add(menu, client, 0, client->name, NULL);
-		}
-	}
-
-	client = (client_t *)menu_filter(menu);
-
-	if (client) {
-		if (client->flags & CLIENT_HIDDEN) {
-			client_show(state, client);
-		}
-
-		client_raise(state, client);
-		client_activate(state, client, True);
-	}
-
-	menu_free(menu);
 }
 
 void

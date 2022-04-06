@@ -120,6 +120,62 @@ x_get_text_property(Display *display, Window window, Atom atom, char **output)
 	return result;
 }
 
+Bool
+x_parse_display(char *name, char **host, int *displayp, int *screenp)
+{
+	char *colon, *dot, *end;
+	int len, display, screen;
+
+	if (!name || !*name) {
+		name = getenv("DISPLAY");
+	}
+
+	if (!name) {
+		return False;
+	}
+
+	colon = strrchr(name, ':');
+	if (!colon) {
+		return False;
+	}
+
+	len = colon - name;
+	++colon;
+	display = strtoul(colon, &dot, 10);
+
+	if (dot == colon) {
+		return False;
+	}
+
+	if(*dot == '\0') {
+		screen = 0;
+	} else {
+		if (*dot != '.') {
+			return False;
+		}
+
+		++dot;
+		screen = strtoul(dot, &end, 10);
+		if ((end == dot) || (*end != '\0')) {
+			return False;
+		}
+	}
+
+	*host = malloc(len + 1);
+	if(!*host) {
+		return False;
+	}
+
+	memcpy(*host, name, len);
+	(*host)[len] = '\0';
+	*displayp = display;
+	if(screenp) {
+		*screenp = screen;
+	}
+
+	return True;
+}
+
 void
 x_send_message(Display *display, Window window, Atom type, Atom data, Time time)
 {

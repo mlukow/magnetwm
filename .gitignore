@@ -62,3 +62,4 @@ config.c
 config.log
 config.status
 magnetwm
+magnetc

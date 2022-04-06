@@ -86,7 +86,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = magnetwm$(EXEEXT)
+bin_PROGRAMS = magnetc$(EXEEXT) magnetwm$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -101,11 +101,15 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+am_magnetc_OBJECTS = magnetc.$(OBJEXT) xutils.$(OBJEXT)
+magnetc_OBJECTS = $(am_magnetc_OBJECTS)
+magnetc_LDADD = $(LDADD)
 am_magnetwm_OBJECTS = client.$(OBJEXT) config.$(OBJEXT) \
 	desktop.$(OBJEXT) event.$(OBJEXT) ewmh.$(OBJEXT) \
 	functions.$(OBJEXT) group.$(OBJEXT) icccm.$(OBJEXT) \
-	main.$(OBJEXT) menu.$(OBJEXT) screen.$(OBJEXT) state.$(OBJEXT) \
-	utils.$(OBJEXT) xutils.$(OBJEXT)
+	magnetwm.$(OBJEXT) menu.$(OBJEXT) screen.$(OBJEXT) \
+	server.$(OBJEXT) state.$(OBJEXT) utils.$(OBJEXT) \
+	xutils.$(OBJEXT)
 magnetwm_OBJECTS = $(am_magnetwm_OBJECTS)
 magnetwm_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -126,8 +130,10 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/client.Po ./$(DEPDIR)/config.Po \
 	./$(DEPDIR)/desktop.Po ./$(DEPDIR)/event.Po \
 	./$(DEPDIR)/ewmh.Po ./$(DEPDIR)/functions.Po \
-	./$(DEPDIR)/group.Po ./$(DEPDIR)/icccm.Po ./$(DEPDIR)/main.Po \
-	./$(DEPDIR)/menu.Po ./$(DEPDIR)/screen.Po ./$(DEPDIR)/state.Po \
+	./$(DEPDIR)/group.Po ./$(DEPDIR)/icccm.Po \
+	./$(DEPDIR)/magnetc.Po ./$(DEPDIR)/magnetwm.Po \
+	./$(DEPDIR)/menu.Po ./$(DEPDIR)/screen.Po \
+	./$(DEPDIR)/server.Po ./$(DEPDIR)/state.Po \
 	./$(DEPDIR)/utils.Po ./$(DEPDIR)/xutils.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -150,8 +156,8 @@ am__v_YACC_ = $(am__v_YACC_@AM_DEFAULT_V@)
 am__v_YACC_0 = @echo "  YACC    " $@;
 am__v_YACC_1 = 
 YLWRAP = $(top_srcdir)/ylwrap
-SOURCES = $(magnetwm_SOURCES)
-DIST_SOURCES = $(magnetwm_SOURCES)
+SOURCES = $(magnetc_SOURCES) $(magnetwm_SOURCES)
+DIST_SOURCES = $(magnetc_SOURCES) $(magnetwm_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -294,7 +300,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-magnetwm_SOURCES = client.c config.y desktop.c event.c ewmh.c functions.c group.c icccm.c main.c menu.c screen.c state.c utils.c xutils.c
+magnetc_SOURCES = magnetc.c xutils.c
+magnetwm_SOURCES = client.c config.y desktop.c event.c ewmh.c functions.c group.c icccm.c magnetwm.c menu.c screen.c server.c state.c utils.c xutils.c
 CLEANFILES = config.c
 all: all-am
 
@@ -376,6 +383,10 @@ uninstall-binPROGRAMS:
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
 
+magnetc$(EXEEXT): $(magnetc_OBJECTS) $(magnetc_DEPENDENCIES) $(EXTRA_magnetc_DEPENDENCIES) 
+	@rm -f magnetc$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(magnetc_OBJECTS) $(magnetc_LDADD) $(LIBS)
+
 magnetwm$(EXEEXT): $(magnetwm_OBJECTS) $(magnetwm_DEPENDENCIES) $(EXTRA_magnetwm_DEPENDENCIES) 
 	@rm -f magnetwm$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(magnetwm_OBJECTS) $(magnetwm_LDADD) $(LIBS)
@@ -394,9 +405,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/functions.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/group.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/icccm.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/magnetc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/magnetwm.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/menu.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/screen.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/server.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utils.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xutils.Po@am__quote@ # am--include-marker
@@ -708,9 +721,11 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/functions.Po
 	-rm -f ./$(DEPDIR)/group.Po
 	-rm -f ./$(DEPDIR)/icccm.Po
-	-rm -f ./$(DEPDIR)/main.Po
+	-rm -f ./$(DEPDIR)/magnetc.Po
+	-rm -f ./$(DEPDIR)/magnetwm.Po
 	-rm -f ./$(DEPDIR)/menu.Po
 	-rm -f ./$(DEPDIR)/screen.Po
+	-rm -f ./$(DEPDIR)/server.Po
 	-rm -f ./$(DEPDIR)/state.Po
 	-rm -f ./$(DEPDIR)/utils.Po
 	-rm -f ./$(DEPDIR)/xutils.Po
@@ -769,9 +784,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/functions.Po
 	-rm -f ./$(DEPDIR)/group.Po
 	-rm -f ./$(DEPDIR)/icccm.Po
-	-rm -f ./$(DEPDIR)/main.Po
+	-rm -f ./$(DEPDIR)/magnetc.Po
+	-rm -f ./$(DEPDIR)/magnetwm.Po
 	-rm -f ./$(DEPDIR)/menu.Po
 	-rm -f ./$(DEPDIR)/screen.Po
+	-rm -f ./$(DEPDIR)/server.Po
 	-rm -f ./$(DEPDIR)/state.Po
 	-rm -f ./$(DEPDIR)/utils.Po
 	-rm -f ./$(DEPDIR)/xutils.Po
