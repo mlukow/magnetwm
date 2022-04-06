@@ -17,6 +17,8 @@
 #include "state.h"
 #include "xutils.h"
 
+#define SOCKET_PATTERN "/tmp/magnetwm%s_%i_%i-socket"
+
 void server_bind_key(state_t *, char **);
 void server_bind_mouse(state_t *, char **);
 void server_border_width(state_t *, char **);
@@ -217,7 +219,7 @@ server_free(server_t *server)
 	close(server->fd);
 
 	if (x_parse_display(NULL, &host, &dn, &sn)) {
-		snprintf(buf, BUFSIZ, "/tmp/magnetwm%s_%i_%i-socket", host, dn, sn);
+		snprintf(buf, BUFSIZ, SOCKET_PATTERN, host, dn, sn);
 		unlink(buf);
 		free(host);
 	}
@@ -265,7 +267,7 @@ server_init()
 	}
 
 	address.sun_family = AF_UNIX;
-	snprintf(address.sun_path, sizeof(address.sun_path), "/tmp/magnetwm%s_%i_%i-socket", host, dn, sn);
+	snprintf(address.sun_path, sizeof(address.sun_path), SOCKET_PATTERN, host, dn, sn);
 	free(host);
 
 	if (access(address.sun_path, F_OK) == 0) {
