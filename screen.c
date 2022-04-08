@@ -48,6 +48,7 @@ screen_adopt(state_t *state, screen_t *screen, client_t *client)
 
 	if (client->geometry.y + client->geometry.height < screen->geometry.y) {
 		client->geometry.y = screen->geometry.y;
+		dirty = True;
 	}
 
 	if (client->geometry.y > screen->geometry.y + screen->geometry.height) {

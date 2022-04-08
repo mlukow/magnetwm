@@ -29,8 +29,8 @@
 		StructureNotifyMask)
 
 int menu_calculate_entry(menu_t *, int, int);
-void menu_draw_selection(menu_t *, int);
 void menu_draw(menu_t *);
+void menu_draw_selection(menu_t *, int);
 int menu_filter_add(menu_t *, char *);
 int menu_filter_complete(menu_t *);
 int menu_filter_delete(menu_t *);
@@ -111,52 +111,6 @@ menu_calculate_entry(menu_t *menu, int x, int y)
 	y -= menu->geometry.y + menu->offset + menu->padding + menu->border_width;
 
 	return y / (menu->state->fonts[FONT_MENU_ITEM]->height + 1);
-}
-
-void
-menu_draw_selection(menu_t *menu, int entry)
-{
-	int i;
-	menu_item_t *item = menu->visible;
-	XftFont *font;
-
-	for (i = 0; i < entry; i++) {
-		item = TAILQ_NEXT(item, result);
-	}
-
-	if (!item) {
-		return;
-	}
-
-	font = menu->state->fonts[FONT_MENU_ITEM];
-
-	XftDrawRect(
-			menu->draw,
-			&menu->state->colors[COLOR_MENU_SELECTION_BACKGROUND],
-			0,
-			menu->offset + menu->padding + entry * (font->height + 1) + 1,
-			menu->geometry.width,
-			font->height + 1);
-
-	XftDrawStringUtf8(
-			menu->draw,
-			&menu->state->colors[COLOR_MENU_SELECTION_FOREGROUND],
-			font,
-			menu->padding,
-			menu->offset + menu->padding + entry * (font->height + 1) + font->ascent,
-			(const FcChar8 *)item->text,
-			strlen(item->text));
-
-	if (item->detail) {
-		XftDrawStringUtf8(
-				menu->draw,
-				&menu->state->colors[COLOR_MENU_FOREGROUND],
-				menu->state->fonts[FONT_MENU_ITEM_DETAIL],
-				menu->geometry.width - menu->padding - item->detail_width,
-				menu->offset + menu->padding + entry * (font->height + 1) + font->ascent,
-				(const FcChar8 *)item->detail,
-				strlen(item->detail));
-	}
 }
 
 void
@@ -243,15 +197,79 @@ menu_draw(menu_t *menu)
 	}
 }
 
+void
+menu_draw_selection(menu_t *menu, int entry)
+{
+	int i;
+	menu_item_t *item = menu->visible;
+	XftFont *font;
+
+	for (i = 0; i < entry; i++) {
+		item = TAILQ_NEXT(item, result);
+	}
+
+	if (!item) {
+		return;
+	}
+
+	font = menu->state->fonts[FONT_MENU_ITEM];
+
+	XftDrawRect(
+			menu->draw,
+			&menu->state->colors[COLOR_MENU_SELECTION_BACKGROUND],
+			0,
+			menu->offset + menu->padding + entry * (font->height + 1) + 1,
+			menu->geometry.width,
+			font->height + 1);
+
+	XftDrawStringUtf8(
+			menu->draw,
+			&menu->state->colors[COLOR_MENU_SELECTION_FOREGROUND],
+			font,
+			menu->padding,
+			menu->offset + menu->padding + entry * (font->height + 1) + font->ascent,
+			(const FcChar8 *)item->text,
+			strlen(item->text));
+
+	if (item->detail) {
+		XftDrawStringUtf8(
+				menu->draw,
+				&menu->state->colors[COLOR_MENU_FOREGROUND],
+				menu->state->fonts[FONT_MENU_ITEM_DETAIL],
+				menu->geometry.width - menu->padding - item->detail_width,
+				menu->offset + menu->padding + entry * (font->height + 1) + font->ascent,
+				(const FcChar8 *)item->detail,
+				strlen(item->detail));
+	}
+}
+
 void *
 menu_filter(menu_t *menu)
 {
 	Bool processing = True;
-	int focusrevert, i, width;
+	int focusrevert, i, width_detail = 0, width_text = 0;
 	menu_item_t *item;
 	Window focus;
 	XEvent event;
 	XGlyphInfo extents;
+
+	TAILQ_FOREACH(item, &menu->items, item) {
+		TAILQ_INSERT_TAIL(&menu->results, item, result);
+		menu->count++;
+
+		if (item->text_width > width_text) {
+			width_text = item->text_width;
+		}
+
+		if (item->detail_width > width_detail) {
+			width_detail = item->detail_width;
+		}
+	}
+
+	menu->geometry.width = width_text;
+	if (width_detail > 0) {
+		menu->geometry.width += menu->padding + width_detail;
+	}
 
 	if (menu->prompt) {
 		XftTextExtentsUtf8(
@@ -260,21 +278,9 @@ menu_filter(menu_t *menu)
 				(const FcChar8 *)menu->prompt,
 				strlen(menu->prompt),
 				&extents);
-		menu->geometry.width = extents.width;
-	} else {
-		menu->geometry.width = 0;
-	}
-
-	TAILQ_FOREACH(item, &menu->items, item) {
-		TAILQ_INSERT_TAIL(&menu->results, item, result);
-		menu->count++;
-
-		width = item->text_width;
-		if (item->detail) {
-			width += menu->padding + item->detail_width;
+		if (extents.width > menu->geometry.width) {
+			menu->geometry.width = extents.width;
 		}
-
-		menu->geometry.width = MAX(menu->geometry.width, width);
 	}
 
 	if (menu->cycle) {

@@ -171,7 +171,9 @@ function_menu_windows(state_t *state, void *context, long flag)
 
 	TAILQ_FOREACH(client, &client->group->clients, entry) {
 		if (client->flags & CLIENT_HIDDEN) {
-			menu_add(menu, client, 0, client->name, "(Hidden)");
+			menu_add(menu, client, 0, client->name, "◊");
+		} else if (client->flags & CLIENT_ACTIVE) {
+			menu_add(menu, client, 0, client->name, "•");
 		} else {
 			menu_add(menu, client, 0, client->name, NULL);
 		}
