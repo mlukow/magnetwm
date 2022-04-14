@@ -26,6 +26,7 @@ void server_color(state_t *, char **);
 void server_command(state_t *, char **);
 void server_font(state_t *, char **);
 void server_ignore(state_t *, char **);
+void server_label(state_t *, char **);
 void server_wm_name(state_t *, char **);
 
 static const struct {
@@ -41,6 +42,7 @@ static const struct {
 	{ FUNC_CMD(command, 2, command) },
 	{ FUNC_CMD(font, 2, font) },
 	{ FUNC_CMD(ignore, 1, ignore) },
+	{ FUNC_CMD(label, 2, label) },
 	{ FUNC_CMD(wm-name, 1, wm_name) },
 #undef FUNC_CMD
 };
@@ -298,6 +300,30 @@ server_init()
 	server->fd = fd;
 
 	return server;
+}
+
+void
+server_label(state_t *state, char **argv)
+{
+	int i;
+	struct labels {
+		char *name;
+		label_t label;
+	} labels[] = {
+		{ "applications", LABEL_APPLICATIONS },
+		{ "run", LABEL_RUN },
+		{ "windows", LABEL_WINDOWS }
+	};
+
+	for (i = 0; i < sizeof(labels) / sizeof(labels[0]); i++) {
+		if (!strcmp(labels[i].name, argv[0])) {
+			if (state->config->labels[labels[i].label]) {
+				free(state->config->labels[labels[i].label]);
+			}
+
+			state->config->labels[labels[i].label] = strdup(argv[1]);
+		}
+	}
 }
 
 void
