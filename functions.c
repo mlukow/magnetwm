@@ -81,7 +81,7 @@ function_menu_command(state_t *state, void *context, long flag)
 	menu_t *menu;
 	screen_t *screen = (screen_t *)context;
 
-	menu = menu_init(state, screen, "Application", False);
+	menu = menu_init(state, screen, state->config->labels[LABEL_APPLICATIONS], False);
 
 	TAILQ_FOREACH(command, &state->config->commands, entry) {
 		menu_add(menu, command, 1, command->name, NULL);
@@ -107,7 +107,7 @@ function_menu_exec(state_t *state, void *context, long flag)
 	struct dirent *dp;
 	struct stat sb;
 
-	menu = menu_init(state, screen, "Run", False);
+	menu = menu_init(state, screen, state->config->labels[LABEL_RUN], False);
 
 	paths = getenv("PATH");
 	if (!paths) {
@@ -167,7 +167,7 @@ function_menu_windows(state_t *state, void *context, long flag)
 	screen_t *screen;
 
 	screen = client->group->desktop->screen;
-	menu = menu_init(state, screen, NULL, False);
+	menu = menu_init(state, screen, state->config->labels[LABEL_WINDOWS], False);
 
 	TAILQ_FOREACH(client, &client->group->clients, entry) {
 		if (client->flags & CLIENT_HIDDEN) {

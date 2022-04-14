@@ -138,7 +138,7 @@ static config_t *config;
 
 %}
 
-%token ANIMATETRANSITIONS ANIMATIONDURATION
+%token APPLICATIONS
 %token BINDKEY
 %token BINDMOUSE
 %token BORDERACTIVE
@@ -151,6 +151,7 @@ static config_t *config;
 %token ERROR
 %token FONT
 %token IGNORE
+%token LABEL
 %token MENUBACKGROUND
 %token MENUFOREGROUND
 %token MENUINPUT
@@ -162,7 +163,9 @@ static config_t *config;
 %token MENUSEPARATOR
 %token NO
 %token POINTER
+%token RUN
 %token WINDOWPLACEMENT
+%token WINDOWS
 %token WMNAME
 %token YES
 
@@ -179,6 +182,7 @@ grammar	:
 		| grammar main '\n'
 		| grammar color '\n'
 		| grammar font '\n'
+		| grammar label '\n'
 		;
 
 color	: COLOR colors
@@ -240,6 +244,35 @@ fonts	: MENUINPUT STRING {
 		}
 		;
 
+label	: LABEL labels
+		;
+
+labels	: APPLICATIONS STRING {
+			if (config->labels[LABEL_APPLICATIONS]) {
+				free(config->labels[LABEL_APPLICATIONS]);
+			}
+
+			config->labels[LABEL_APPLICATIONS] = strdup($2);
+			free($2);
+		}
+		| RUN STRING {
+			if (config->labels[LABEL_RUN]) {
+				free(config->labels[LABEL_RUN]);
+			}
+
+			config->labels[LABEL_RUN] = strdup($2);
+			free($2);
+		}
+		| WINDOWS STRING {
+			if (config->labels[LABEL_WINDOWS]) {
+				free(config->labels[LABEL_WINDOWS]);
+			}
+
+			config->labels[LABEL_WINDOWS] = strdup($2);
+			free($2);
+		}
+		;
+
 string	: string STRING {
 			 if (xasprintf(&$$, "%s %s", $1, $2) == -1) {
 				 free($1);
@@ -256,13 +289,7 @@ string	: string STRING {
 yesno	: YES	{ $$ = 1; }
 		| NO	{ $$ = 0; }
 
-main	: ANIMATETRANSITIONS yesno {
-			config->animate_transitions = $2;
-		}
-		| ANIMATIONDURATION NUMBER {
-			config->animation_duration = (double)$2 / 1000.0;
-		}
-		| BINDKEY STRING string {
+main	: BINDKEY STRING string {
 			 if (!config_bind_key(config, $2, $3)) {
 				 yyerror("invalid bind-key: %s %s", $2, $3);
 				 free($2);
@@ -393,8 +420,7 @@ int
 lookup(char *s)
 {
 	static const keywords_t keywords[] = {
-		{ "animate-transitions", ANIMATETRANSITIONS },
-		{ "animation-duration", ANIMATIONDURATION },
+		{ "applications", APPLICATIONS },
 		{ "bind-key", BINDKEY },
 		{ "bind-mouse", BINDMOUSE },
 		{ "border-active", BORDERACTIVE },
@@ -406,6 +432,7 @@ lookup(char *s)
 		{ "command", COMMAND },
 		{ "font", FONT },
 		{ "ignore", IGNORE },
+		{ "label", LABEL },
 		{ "menu-background", MENUBACKGROUND },
 		{ "menu-foreground", MENUFOREGROUND },
 		{ "menu-input", MENUINPUT },
@@ -417,7 +444,9 @@ lookup(char *s)
 		{ "menu-separator", MENUSEPARATOR },
 		{ "no", NO },
 		{ "pointer", POINTER },
+		{ "run", RUN },
 		{ "window-placement", WINDOWPLACEMENT },
+		{ "windows", WINDOWS },
 		{ "wm-name", WMNAME },
 		{ "yes", YES }
 	};
@@ -813,6 +842,10 @@ config_init()
 	config->animation_duration = 0.1;
 	config->border_width = 1;
 	config->window_placement = WINDOW_PLACEMENT_CASCADE;
+
+	config->labels[LABEL_APPLICATIONS] = NULL;
+	config->labels[LABEL_RUN] = NULL;
+	config->labels[LABEL_WINDOWS] = NULL;
 
 	TAILQ_INIT(&config->commands);
 	TAILQ_INIT(&config->keybindings);

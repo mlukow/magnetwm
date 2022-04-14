@@ -155,13 +155,15 @@ menu_draw(menu_t *menu)
 					menu->filter_length);
 		}
 
-		XftDrawRect(
-				menu->draw,
-				&menu->state->colors[COLOR_MENU_SEPARATOR],
-				0,
-				menu->offset - 1,
-				menu->geometry.width,
-				1);
+		if (menu->count > 0) {
+			XftDrawRect(
+					menu->draw,
+					&menu->state->colors[COLOR_MENU_SEPARATOR],
+					0,
+					menu->offset - 1,
+					menu->geometry.width,
+					1);
+		}
 	}
 
 	item = menu->visible;

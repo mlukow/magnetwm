@@ -30,6 +30,18 @@ typedef enum {
 	COLOR_NITEMS
 } color_t;
 
+typedef enum {
+	LABEL_APPLICATIONS,
+	LABEL_RUN,
+	LABEL_WINDOWS,
+
+	LABEL_WINDOW_ACTIVE,
+	LABEL_WINDOW_INACTIVE,
+	LABEL_WINDOW_HIDDEN,
+
+	LABEL_NITEMS
+} label_t;
+
 typedef struct command_t {
 	TAILQ_ENTRY(command_t) entry;
 
@@ -76,6 +88,7 @@ typedef struct config_t {
 
 	char *colors[COLOR_NITEMS];
 	char *fonts[FONT_NITEMS];
+	char *labels[LABEL_NITEMS];
 
 	Bool animate_transitions;
 	double animation_duration;
