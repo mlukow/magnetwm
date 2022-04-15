@@ -209,18 +209,19 @@ void
 function_window_center(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t screen_area;
+	geometry_t geometry, screen_area;
 	screen_t *screen;
 
 	screen = client->group->desktop->screen;
 	screen_area = screen_available_area(screen);
 
 	client->geometry_saved = client->geometry;
+	geometry = client->geometry;
 
-	client->geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
-	client->geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
+	geometry.x = screen_area.x + (screen_area.width - geometry.width) / 2 - client->border_width;
+	geometry.y = screen_area.y + (screen_area.height - geometry.height) / 2 - client->border_width;
 
-	client_move_resize(state, client, True);
+	client_move_resize(state, client, geometry, True, True);
 }
 
 void
@@ -281,7 +282,7 @@ void
 function_window_move(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t screen_area;
+	geometry_t geometry, screen_area;
 	int move = 1, result, x, y;
 	screen_t *screen;
 	Time time = 0;
@@ -306,6 +307,8 @@ function_window_move(struct state_t *state, void *context, long flag)
 	}
 
 	client->geometry_saved = client->geometry;
+	geometry = client->geometry;
+
 	screen = client->group->desktop->screen;
 	screen_area = screen_available_area(screen);
 
@@ -319,16 +322,16 @@ function_window_move(struct state_t *state, void *context, long flag)
 
 				time = event.xmotion.time;
 
-				client->geometry.x += event.xmotion.x_root - x;
-				client->geometry.y += event.xmotion.y_root - y;
-				if (client->geometry.y < screen_area.y) {
-					client->geometry.y = screen_area.y;
+				geometry.x += event.xmotion.x_root - x;
+				geometry.y += event.xmotion.y_root - y;
+				if (geometry.y < screen_area.y) {
+					geometry.y = screen_area.y;
 				}
 
 				x = event.xmotion.x_root;
 				y = event.xmotion.y_root;
 
-				client_move_resize(state, client, True);
+				client_move_resize(state, client, geometry, False, True);
 
 				break;
 			case ButtonRelease:
@@ -351,6 +354,7 @@ void
 function_window_move_to_screen(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
+	geometry_t geometry, screen_area_new, screen_area_old;
 	screen_t *screen = NULL;
 
 	if (flag == DIRECTION_UP) {
@@ -364,10 +368,14 @@ function_window_move_to_screen(struct state_t *state, void *context, long flag)
 	}
 
 	if (screen) {
-		client->geometry.x = screen->geometry.x + (client->geometry.x - client->group->desktop->screen->geometry.x);
-		client->geometry.y = screen->geometry.y + (client->geometry.y - client->group->desktop->screen->geometry.y);
+		geometry = client->geometry;
+		screen_area_new = screen_available_area(screen);
+		screen_area_old = screen_available_area(client->group->desktop->screen);
 
-		client_move_resize(state, client, False);
+		geometry.x = screen_area_new.x + (geometry.x - screen_area_old.x);
+		geometry.y = screen_area_new.y + (geometry.y - screen_area_old.y);
+
+		client_move_resize(state, client, geometry, True, False);
 		screen_adopt(state, screen, client);
 	}
 }
@@ -377,6 +385,7 @@ function_window_resize(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
 	Cursor cursor;
+	geometry_t geometry;
 	int resize = 1, result, x, y;
 	Time time = 0;
 	XEvent event;
@@ -414,6 +423,7 @@ function_window_resize(struct state_t *state, void *context, long flag)
 	}
 
 	client->geometry_saved = client->geometry;
+	geometry = client->geometry;
 
 	while (resize) {
 		XMaskEvent(state->display, ButtonPressMask | ButtonReleaseMask | PointerMotionMask, &event);
@@ -425,24 +435,24 @@ function_window_resize(struct state_t *state, void *context, long flag)
 
 				time = event.xmotion.time;
 
-				if (x < client->geometry.x + client->geometry.width / 2) {
-					client->geometry.x += event.xmotion.x_root - x;
-					client->geometry.width -= event.xmotion.x_root - x;
+				if (x < geometry.x + geometry.width / 2) {
+					geometry.x += event.xmotion.x_root - x;
+					geometry.width -= event.xmotion.x_root - x;
 				} else {
-					client->geometry.width += event.xmotion.x_root - x;
+					geometry.width += event.xmotion.x_root - x;
 				}
 
-				if (y < client->geometry.y + client->geometry.height / 2) {
-					client->geometry.y += event.xmotion.y_root - y;
-					client->geometry.height -= event.xmotion.y_root - y;
+				if (y < geometry.y + geometry.height / 2) {
+					geometry.y += event.xmotion.y_root - y;
+					geometry.height -= event.xmotion.y_root - y;
 				} else {
-					client->geometry.height += event.xmotion.y_root - y;
+					geometry.height += event.xmotion.y_root - y;
 				}
 
 				x = event.xmotion.x_root;
 				y = event.xmotion.y_root;
 
-				client_move_resize(state, client, True);
+				client_move_resize(state, client, geometry, False, True);
 
 				break;
 			case ButtonRelease:
@@ -471,7 +481,7 @@ void
 function_window_tile(state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t screen_area;
+	geometry_t geometry, screen_area;
 	screen_t *screen;
 
 	screen = client->group->desktop->screen;
@@ -480,40 +490,40 @@ function_window_tile(state_t *state, void *context, long flag)
 	client->geometry_saved = client->geometry;
 
 	if (flag & DIRECTION_UP) {
-		client->geometry.y = screen_area.y;
-		client->geometry.height = screen_area.height / 2 - 2 * client->border_width;
+		geometry.y = screen_area.y;
+		geometry.height = screen_area.height / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_UP_THIRD) {
-		client->geometry.y = screen_area.y;
-		client->geometry.height = screen_area.height / 3 - 2 * client->border_width;
+		geometry.y = screen_area.y;
+		geometry.height = screen_area.height / 3 - 2 * client->border_width;
 	} else if (flag & DIRECTION_DOWN) {
-		client->geometry.y = screen_area.y + screen_area.height / 2;
-		client->geometry.height = screen_area.height / 2 - 2 * client->border_width;
+		geometry.y = screen_area.y + screen_area.height / 2;
+		geometry.height = screen_area.height / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_DOWN_THIRD) {
-		client->geometry.y = screen_area.y + screen_area.height - screen_area.height / 3;
-		client->geometry.height = screen_area.height / 3 - 2 * client->border_width;
+		geometry.y = screen_area.y + screen_area.height - screen_area.height / 3;
+		geometry.height = screen_area.height / 3 - 2 * client->border_width;
 	} else {
-		client->geometry.y = screen_area.y;
-		client->geometry.height = screen_area.height - 2 * client->border_width;
+		geometry.y = screen_area.y;
+		geometry.height = screen_area.height - 2 * client->border_width;
 	}
 
 	if (flag & DIRECTION_LEFT) {
-		client->geometry.x = screen_area.x;
-		client->geometry.width = screen_area.width / 2 - 2 * client->border_width;
+		geometry.x = screen_area.x;
+		geometry.width = screen_area.width / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_LEFT_THIRD) {
-		client->geometry.x = screen_area.x;
-		client->geometry.width = screen_area.width / 3 - 2 * client->border_width;
+		geometry.x = screen_area.x;
+		geometry.width = screen_area.width / 3 - 2 * client->border_width;
 	} else if (flag & DIRECTION_RIGHT) {
-		client->geometry.x = screen_area.x + screen_area.width / 2;
-		client->geometry.width = screen_area.width / 2 - 2 * client->border_width;
+		geometry.x = screen_area.x + screen_area.width / 2;
+		geometry.width = screen_area.width / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_RIGHT_THIRD) {
-		client->geometry.x = screen_area.x + screen_area.width - screen_area.width / 3;
-		client->geometry.width = screen_area.width / 3 - 2 * client->border_width;
+		geometry.x = screen_area.x + screen_area.width - screen_area.width / 3;
+		geometry.width = screen_area.width / 3 - 2 * client->border_width;
 	} else {
-		client->geometry.x = screen_area.x;
-		client->geometry.width = screen_area.width - 2 * client->border_width;
+		geometry.x = screen_area.x;
+		geometry.width = screen_area.width - 2 * client->border_width;
 	}
 
-	client_move_resize(state, client, True);
+	client_move_resize(state, client, geometry, True, True);
 }
 
 void

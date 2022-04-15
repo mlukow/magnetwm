@@ -27,6 +27,7 @@ void server_command(state_t *, char **);
 void server_font(state_t *, char **);
 void server_ignore(state_t *, char **);
 void server_label(state_t *, char **);
+void server_transition_duration(state_t *, char **);
 void server_wm_name(state_t *, char **);
 
 static const struct {
@@ -43,6 +44,7 @@ static const struct {
 	{ FUNC_CMD(font, 2, font) },
 	{ FUNC_CMD(ignore, 1, ignore) },
 	{ FUNC_CMD(label, 2, label) },
+	{ FUNC_CMD(transition-duration, 1, transition_duration) },
 	{ FUNC_CMD(wm-name, 1, wm_name) },
 #undef FUNC_CMD
 };
@@ -393,6 +395,12 @@ server_process(state_t *state, server_t *server)
 	}
 
 	free(argv);
+}
+
+void
+server_transition_duration(state_t *state, char **argv)
+{
+	state->config->transition_duration = (double)atoi(argv[0]) / 1000.0;
 }
 
 void

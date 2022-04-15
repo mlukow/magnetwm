@@ -164,6 +164,7 @@ static config_t *config;
 %token NO
 %token POINTER
 %token RUN
+%token TRANSITIONDURATION
 %token WINDOWACTIVE
 %token WINDOWHIDDEN
 %token WINDOWINACTIVE
@@ -315,6 +316,7 @@ string	: string STRING {
 
 yesno	: YES	{ $$ = 1; }
 		| NO	{ $$ = 0; }
+		;
 
 main	: BINDKEY STRING string {
 			 if (!config_bind_key(config, $2, $3)) {
@@ -353,6 +355,9 @@ main	: BINDKEY STRING string {
 		| IGNORE STRING {
 			config_ignore(config, $2);
 			free($2);
+		}
+		| TRANSITIONDURATION NUMBER {
+			config->transition_duration = (double)$2 / 1000.0;
 		}
 		| WINDOWPLACEMENT CASCADE {
 			config->window_placement = WINDOW_PLACEMENT_CASCADE;
@@ -472,6 +477,7 @@ lookup(char *s)
 		{ "no", NO },
 		{ "pointer", POINTER },
 		{ "run", RUN },
+		{ "transition-duration", TRANSITIONDURATION },
 		{ "window-active", WINDOWACTIVE },
 		{ "window-inactive", WINDOWINACTIVE },
 		{ "window-hidden", WINDOWHIDDEN },
@@ -868,8 +874,7 @@ config_init()
 	config->fonts[FONT_MENU_ITEM] = strdup("sans-serif:pixelsize=14:bold");
 	config->fonts[FONT_MENU_ITEM_DETAIL] = strdup("sans-serif:pixelsize=14:italic");
 
-	config->animate_transitions = False;
-	config->animation_duration = 0.1;
+	config->transition_duration = 0.0;
 	config->border_width = 1;
 	config->window_placement = WINDOW_PLACEMENT_CASCADE;
 

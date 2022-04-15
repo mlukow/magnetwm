@@ -90,8 +90,7 @@ typedef struct config_t {
 	char *fonts[FONT_NITEMS];
 	char *labels[LABEL_NITEMS];
 
-	Bool animate_transitions;
-	double animation_duration;
+	double transition_duration;
 	int border_width;
 	window_placement_t window_placement;
 } config_t;

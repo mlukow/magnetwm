@@ -98,7 +98,7 @@ void client_hide(struct state_t *, client_t *);
 client_t *client_init(struct state_t *, Window, Bool);
 void client_lower(struct state_t *, client_t *);
 void client_map(struct state_t *, client_t *);
-void client_move_resize(struct state_t *, client_t *, Bool);
+void client_move_resize(struct state_t *, client_t *, geometry_t, Bool, Bool);
 client_t *client_next(client_t *);
 client_t *client_previous(client_t *);
 void client_raise(struct state_t *, client_t *);

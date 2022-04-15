@@ -1,6 +1,5 @@
 border-width		1
-animate-transitions	yes
-animation-duration	100
+transition-duration	100
 
 ignore		Polybar
 
