@@ -164,6 +164,9 @@ static config_t *config;
 %token NO
 %token POINTER
 %token RUN
+%token WINDOWACTIVE
+%token WINDOWHIDDEN
+%token WINDOWINACTIVE
 %token WINDOWPLACEMENT
 %token WINDOWS
 %token WMNAME
@@ -269,6 +272,30 @@ labels	: APPLICATIONS STRING {
 			}
 
 			config->labels[LABEL_WINDOWS] = strdup($2);
+			free($2);
+		}
+		| WINDOWACTIVE STRING {
+			if (config->labels[LABEL_WINDOW_ACTIVE]) {
+				free(config->labels[LABEL_WINDOW_ACTIVE]);
+			}
+
+			config->labels[LABEL_WINDOW_ACTIVE] = strdup($2);
+			free($2);
+		}
+		| WINDOWINACTIVE STRING {
+			if (config->labels[LABEL_WINDOW_INACTIVE]) {
+				free(config->labels[LABEL_WINDOW_INACTIVE]);
+			}
+
+			config->labels[LABEL_WINDOW_INACTIVE] = strdup($2);
+			free($2);
+		}
+		| WINDOWHIDDEN STRING {
+			if (config->labels[LABEL_WINDOW_HIDDEN]) {
+				free(config->labels[LABEL_WINDOW_HIDDEN]);
+			}
+
+			config->labels[LABEL_WINDOW_HIDDEN] = strdup($2);
 			free($2);
 		}
 		;
@@ -445,6 +472,9 @@ lookup(char *s)
 		{ "no", NO },
 		{ "pointer", POINTER },
 		{ "run", RUN },
+		{ "window-active", WINDOWACTIVE },
+		{ "window-inactive", WINDOWINACTIVE },
+		{ "window-hidden", WINDOWHIDDEN },
 		{ "window-placement", WINDOWPLACEMENT },
 		{ "windows", WINDOWS },
 		{ "wm-name", WMNAME },
@@ -843,9 +873,13 @@ config_init()
 	config->border_width = 1;
 	config->window_placement = WINDOW_PLACEMENT_CASCADE;
 
-	config->labels[LABEL_APPLICATIONS] = NULL;
-	config->labels[LABEL_RUN] = NULL;
+	config->labels[LABEL_APPLICATIONS] = strdup("Application");
+	config->labels[LABEL_RUN] = strdup("Run");
 	config->labels[LABEL_WINDOWS] = NULL;
+
+	config->labels[LABEL_WINDOW_ACTIVE] = strdup("•");
+	config->labels[LABEL_WINDOW_INACTIVE] = NULL;
+	config->labels[LABEL_WINDOW_HIDDEN] = strdup("◊");
 
 	TAILQ_INIT(&config->commands);
 	TAILQ_INIT(&config->keybindings);
