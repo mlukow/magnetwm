@@ -17,8 +17,8 @@
 #include "xutils.h"
 
 void client_placement(state_t *, client_t *client);
-void client_placement_cascade(state_t *, client_t *, geometry_t);
-void client_placement_pointer(state_t *, client_t *, geometry_t);
+geometry_t client_placement_cascade(state_t *, client_t *, geometry_t);
+geometry_t client_placement_pointer(state_t *, client_t *, geometry_t);
 void client_update_class(state_t *, client_t *);
 
 void
@@ -366,9 +366,9 @@ client_placement(state_t *state, client_t *client)
 		// TODO: support hints
 	} else {
 		if (state->config->window_placement == WINDOW_PLACEMENT_CASCADE) {
-			client_placement_cascade(state, client, screen_area);
+			geometry = client_placement_cascade(state, client, screen_area);
 		} else if (state->config->window_placement == WINDOW_PLACEMENT_POINTER) {
-			client_placement_pointer(state, client, screen_area);
+			geometry = client_placement_pointer(state, client, screen_area);
 		}
 
 		if (geometry.x < screen_area.x) {
@@ -391,10 +391,11 @@ client_placement(state_t *state, client_t *client)
 	client_move_resize(state, client, geometry, False, False);
 }
 
-void
+geometry_t
 client_placement_cascade(state_t *state, client_t *client, geometry_t screen_area)
 {
 	client_t *existing;
+	geometry_t geometry;
 	int rand_x_from, rand_x_to, rand_y_from, rand_y_to;
 
 	existing = TAILQ_LAST(&client->group->clients, client_q);
@@ -403,12 +404,12 @@ client_placement_cascade(state_t *state, client_t *client, geometry_t screen_are
 	}
 
 	if (existing) {
-		client->geometry.x = existing->geometry.x + FUZZY_DISTANCE;
-		client->geometry.y = existing->geometry.y + FUZZY_DISTANCE;
-		client->geometry.width = existing->geometry.width;
-		client->geometry.height = existing->geometry.height;
-		if ((client->geometry.x + client->geometry.width > screen_area.x + screen_area.width) ||
-				(client->geometry.y + client->geometry.height > screen_area.y + screen_area.height)) {
+		geometry.x = existing->geometry.x + FUZZY_DISTANCE;
+		geometry.y = existing->geometry.y + FUZZY_DISTANCE;
+		geometry.width = existing->geometry.width;
+		geometry.height = existing->geometry.height;
+		if ((geometry.x + geometry.width > screen_area.x + screen_area.width) ||
+				(geometry.y + geometry.height > screen_area.y + screen_area.height)) {
 
 			if (existing->geometry.x + existing->geometry.width / 2 > (screen_area.x + screen_area.width) / 2) {
 				rand_x_from = screen_area.x;
@@ -426,25 +427,34 @@ client_placement_cascade(state_t *state, client_t *client, geometry_t screen_are
 				rand_y_to = screen_area.y + screen_area.height;
 			}
 
-			client->geometry.x = (rand() % (rand_x_to - rand_x_from)) + rand_x_from;
-			client->geometry.y = (rand() % (rand_y_to - rand_y_from)) + rand_y_from;
+			geometry.x = (rand() % (rand_x_to - rand_x_from)) + rand_x_from;
+			geometry.y = (rand() % (rand_y_to - rand_y_from)) + rand_y_from;
 
 		}
 	} else {
-		client->geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
-		client->geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
+		geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
+		geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
+		geometry.width = client->geometry.width;
+		geometry.height = client->geometry.height;
 	}
+
+	return geometry;
 }
 
-void
+geometry_t
 client_placement_pointer(state_t *state, client_t *client, geometry_t screen_area)
 {
+	geometry_t geometry;
 	int x, y;
 
 	(void)x_get_pointer(state->display, state->root, &x, &y);
 
-	client->geometry.x = x - client->geometry.width / 2 - client->border_width;
-	client->geometry.y = y - client->geometry.height / 2 - client->border_width;
+	geometry.x = x - client->geometry.width / 2 - client->border_width;
+	geometry.y = y - client->geometry.height / 2 - client->border_width;
+	geometry.width = client->geometry.width;
+	geometry.height = client->geometry.height;
+
+	return geometry;
 }
 
 client_t *
