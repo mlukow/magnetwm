@@ -143,6 +143,7 @@ static config_t *config;
 %token BINDMOUSE
 %token BORDERACTIVE
 %token BORDERINACTIVE
+%token BORDERMARK
 %token BORDERURGENT
 %token BORDERWIDTH
 %token CASCADE
@@ -198,6 +199,10 @@ colors	: BORDERACTIVE STRING {
 		| BORDERINACTIVE STRING {
 			 free(config->colors[COLOR_BORDER_INACTIVE]);
 			 config->colors[COLOR_BORDER_INACTIVE] = $2;
+		}
+		| BORDERMARK STRING {
+			free(config->colors[COLOR_BORDER_MARK]);
+			config->colors[COLOR_BORDER_MARK] = $2;
 		}
 		| BORDERURGENT STRING {
 			 free(config->colors[COLOR_BORDER_URGENT]);
@@ -457,6 +462,7 @@ lookup(char *s)
 		{ "bind-mouse", BINDMOUSE },
 		{ "border-active", BORDERACTIVE },
 		{ "border-inactive", BORDERINACTIVE },
+		{ "border-mark", BORDERMARK },
 		{ "border-urgent", BORDERURGENT },
 		{ "border-width", BORDERWIDTH },
 		{ "cascade", CASCADE },
@@ -862,6 +868,7 @@ config_init()
 
 	config->colors[COLOR_BORDER_ACTIVE] = strdup("green");
 	config->colors[COLOR_BORDER_INACTIVE] = strdup("blue");
+	config->colors[COLOR_BORDER_MARK] = strdup("magenta");
 	config->colors[COLOR_BORDER_URGENT] = strdup("red");
 	config->colors[COLOR_MENU_BACKGROUND] = strdup("black");
 	config->colors[COLOR_MENU_FOREGROUND] = strdup("white");

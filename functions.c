@@ -21,6 +21,29 @@
 extern sig_atomic_t wm_state;
 
 void
+function_group_cycle_callback(state_t *state, void *context)
+{
+	client_t *client;
+	group_t *current, *group;
+
+	group = (group_t *)context;
+
+	TAILQ_FOREACH(current, &group->desktop->groups, entry) {
+		if (current == group) {
+			TAILQ_FOREACH(client, &current->clients, entry) {
+				client->flags |= CLIENT_MARK;
+				client_draw_border(state, client);
+			}
+		} else {
+			TAILQ_FOREACH(client, &current->clients, entry) {
+				client->flags &= ~CLIENT_MARK;
+				client_draw_border(state, client);
+			}
+		}
+	}
+}
+
+void
 function_group_cycle(state_t *state, void *context, long flag)
 {
 	char detail[BUFSIZ];
@@ -32,7 +55,7 @@ function_group_cycle(state_t *state, void *context, long flag)
 	screen_t *screen = (screen_t *)context;
 
 	desktop = screen->desktops[screen->desktop_index];
-	menu = menu_init(state, screen, NULL, True);
+	menu = menu_init(state, screen, NULL, True, function_group_cycle_callback);
 
 	TAILQ_FOREACH_REVERSE(group, &desktop->groups, group_q, entry) {
 		if (!group_can_activate(group)) {
@@ -64,6 +87,13 @@ function_group_cycle(state_t *state, void *context, long flag)
 
 	group = (group_t *)menu_filter(menu);
 
+	TAILQ_FOREACH(current, &desktop->groups, entry) {
+		TAILQ_FOREACH(client, &current->clients, entry) {
+			client->flags &= ~CLIENT_MARK;
+			client_draw_border(state, client);
+		}
+	}
+
 	if (group) {
 		current = TAILQ_LAST(&desktop->groups, group_q);
 		if (current != group) {
@@ -81,7 +111,7 @@ function_menu_command(state_t *state, void *context, long flag)
 	menu_t *menu;
 	screen_t *screen = (screen_t *)context;
 
-	menu = menu_init(state, screen, state->config->labels[LABEL_APPLICATIONS], False);
+	menu = menu_init(state, screen, state->config->labels[LABEL_APPLICATIONS], False, NULL);
 
 	TAILQ_FOREACH(command, &state->config->commands, entry) {
 		menu_add(menu, command, 1, command->name, NULL);
@@ -107,7 +137,7 @@ function_menu_exec(state_t *state, void *context, long flag)
 	struct dirent *dp;
 	struct stat sb;
 
-	menu = menu_init(state, screen, state->config->labels[LABEL_RUN], False);
+	menu = menu_init(state, screen, state->config->labels[LABEL_RUN], False, NULL);
 
 	paths = getenv("PATH");
 	if (!paths) {
@@ -160,16 +190,42 @@ function_menu_exec(state_t *state, void *context, long flag)
 }
 
 void
+function_menu_windows_callback(state_t *state, void *context)
+{
+	client_t *client, *current;
+
+	client = (client_t *)context;
+
+	TAILQ_FOREACH(current, &client->group->clients, entry) {
+		if (current == client) {
+			current->flags |= CLIENT_MARK;
+		} else {
+			current->flags &= ~CLIENT_MARK;
+		}
+
+		client_draw_border(state, current);
+	}
+}
+
+void
 function_menu_windows(state_t *state, void *context, long flag)
 {
-	client_t *client = (client_t *)context;
+	client_t *client, *current;
+	group_t *group;
 	menu_t *menu;
 	screen_t *screen;
 
-	screen = client->group->desktop->screen;
-	menu = menu_init(state, screen, state->config->labels[LABEL_WINDOWS], False);
+	client = (client_t *)context;
+	group = client->group;
 
-	TAILQ_FOREACH(client, &client->group->clients, entry) {
+	screen = client->group->desktop->screen;
+	menu = menu_init(state, screen, state->config->labels[LABEL_WINDOWS], False, function_menu_windows_callback);
+
+	TAILQ_FOREACH_REVERSE(client, &client->group->clients, client_q, entry) {
+		if (client->type != CLIENT_TYPE_NORMAL) {
+			continue;
+		}
+		
 		if (client->flags & CLIENT_HIDDEN) {
 			menu_add(menu, client, 0, client->name, state->config->labels[LABEL_WINDOW_HIDDEN]);
 		} else if (client->flags & CLIENT_ACTIVE) {
@@ -180,6 +236,11 @@ function_menu_windows(state_t *state, void *context, long flag)
 	}
 
 	client = (client_t *)menu_filter(menu);
+
+	TAILQ_FOREACH(current, &group->clients, entry) {
+		current->flags &= ~CLIENT_MARK;
+		client_draw_border(state, current);
+	}
 
 	if (client) {
 		if (client->flags & CLIENT_HIDDEN) {
@@ -209,19 +270,18 @@ void
 function_window_center(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t geometry, screen_area;
+	geometry_t screen_area;
 	screen_t *screen;
 
 	screen = client->group->desktop->screen;
 	screen_area = screen_available_area(screen);
 
 	client->geometry_saved = client->geometry;
-	geometry = client->geometry;
 
-	geometry.x = screen_area.x + (screen_area.width - geometry.width) / 2 - client->border_width;
-	geometry.y = screen_area.y + (screen_area.height - geometry.height) / 2 - client->border_width;
+	client->geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
+	client->geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
 
-	client_move_resize(state, client, geometry, True, True);
+	client_move_resize(state, client, True);
 }
 
 void
@@ -282,7 +342,7 @@ void
 function_window_move(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t geometry, screen_area;
+	geometry_t screen_area;
 	int move = 1, result, x, y;
 	screen_t *screen;
 	Time time = 0;
@@ -307,7 +367,6 @@ function_window_move(struct state_t *state, void *context, long flag)
 	}
 
 	client->geometry_saved = client->geometry;
-	geometry = client->geometry;
 
 	screen = client->group->desktop->screen;
 	screen_area = screen_available_area(screen);
@@ -322,16 +381,16 @@ function_window_move(struct state_t *state, void *context, long flag)
 
 				time = event.xmotion.time;
 
-				geometry.x += event.xmotion.x_root - x;
-				geometry.y += event.xmotion.y_root - y;
-				if (geometry.y < screen_area.y) {
-					geometry.y = screen_area.y;
+				client->geometry.x += event.xmotion.x_root - x;
+				client->geometry.y += event.xmotion.y_root - y;
+				if (client->geometry.y < screen_area.y) {
+					client->geometry.y = screen_area.y;
 				}
 
 				x = event.xmotion.x_root;
 				y = event.xmotion.y_root;
 
-				client_move_resize(state, client, geometry, False, True);
+				client_move_resize(state, client, True);
 
 				break;
 			case ButtonRelease:
@@ -354,7 +413,7 @@ void
 function_window_move_to_screen(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t geometry, screen_area_new, screen_area_old;
+	geometry_t screen_area_new, screen_area_old;
 	screen_t *screen = NULL;
 
 	if (flag == DIRECTION_UP) {
@@ -368,14 +427,13 @@ function_window_move_to_screen(struct state_t *state, void *context, long flag)
 	}
 
 	if (screen) {
-		geometry = client->geometry;
 		screen_area_new = screen_available_area(screen);
 		screen_area_old = screen_available_area(client->group->desktop->screen);
 
-		geometry.x = screen_area_new.x + (geometry.x - screen_area_old.x);
-		geometry.y = screen_area_new.y + (geometry.y - screen_area_old.y);
+		client->geometry.x = screen_area_new.x + (client->geometry.x - screen_area_old.x);
+		client->geometry.y = screen_area_new.y + (client->geometry.y - screen_area_old.y);
 
-		client_move_resize(state, client, geometry, True, False);
+		client_move_resize(state, client, False);
 		screen_adopt(state, screen, client);
 	}
 }
@@ -385,8 +443,7 @@ function_window_resize(struct state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
 	Cursor cursor;
-	geometry_t geometry;
-	int resize = 1, result, x, y;
+	int resize = 1, original_height, original_width, result, x, y;
 	Time time = 0;
 	XEvent event;
 
@@ -422,8 +479,10 @@ function_window_resize(struct state_t *state, void *context, long flag)
 		return;
 	}
 
+	original_width = client->geometry.width;
+	original_height = client->geometry.height;
+	
 	client->geometry_saved = client->geometry;
-	geometry = client->geometry;
 
 	while (resize) {
 		XMaskEvent(state->display, ButtonPressMask | ButtonReleaseMask | PointerMotionMask, &event);
@@ -435,24 +494,11 @@ function_window_resize(struct state_t *state, void *context, long flag)
 
 				time = event.xmotion.time;
 
-				if (x < geometry.x + geometry.width / 2) {
-					geometry.x += event.xmotion.x_root - x;
-					geometry.width -= event.xmotion.x_root - x;
-				} else {
-					geometry.width += event.xmotion.x_root - x;
-				}
+				client->geometry.width = original_width + event.xmotion.x_root - x;
+				client->geometry.height = original_height + event.xmotion.y_root - y;
 
-				if (y < geometry.y + geometry.height / 2) {
-					geometry.y += event.xmotion.y_root - y;
-					geometry.height -= event.xmotion.y_root - y;
-				} else {
-					geometry.height += event.xmotion.y_root - y;
-				}
-
-				x = event.xmotion.x_root;
-				y = event.xmotion.y_root;
-
-				client_move_resize(state, client, geometry, False, True);
+				client_apply_size_hints(state, client);
+				client_move_resize(state, client, True);
 
 				break;
 			case ButtonRelease:
@@ -481,7 +527,7 @@ void
 function_window_tile(state_t *state, void *context, long flag)
 {
 	client_t *client = (client_t *)context;
-	geometry_t geometry, screen_area;
+	geometry_t screen_area;
 	screen_t *screen;
 
 	screen = client->group->desktop->screen;
@@ -490,40 +536,41 @@ function_window_tile(state_t *state, void *context, long flag)
 	client->geometry_saved = client->geometry;
 
 	if (flag & DIRECTION_UP) {
-		geometry.y = screen_area.y;
-		geometry.height = screen_area.height / 2 - 2 * client->border_width;
+		client->geometry.y = screen_area.y;
+		client->geometry.height = screen_area.height / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_UP_THIRD) {
-		geometry.y = screen_area.y;
-		geometry.height = screen_area.height / 3 - 2 * client->border_width;
+		client->geometry.y = screen_area.y;
+		client->geometry.height = screen_area.height / 3 - 2 * client->border_width;
 	} else if (flag & DIRECTION_DOWN) {
-		geometry.y = screen_area.y + screen_area.height / 2;
-		geometry.height = screen_area.height / 2 - 2 * client->border_width;
+		client->geometry.y = screen_area.y + screen_area.height / 2;
+		client->geometry.height = screen_area.height / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_DOWN_THIRD) {
-		geometry.y = screen_area.y + screen_area.height - screen_area.height / 3;
-		geometry.height = screen_area.height / 3 - 2 * client->border_width;
+		client->geometry.y = screen_area.y + screen_area.height - screen_area.height / 3;
+		client->geometry.height = screen_area.height / 3 - 2 * client->border_width;
 	} else {
-		geometry.y = screen_area.y;
-		geometry.height = screen_area.height - 2 * client->border_width;
+		client->geometry.y = screen_area.y;
+		client->geometry.height = screen_area.height - 2 * client->border_width;
 	}
 
 	if (flag & DIRECTION_LEFT) {
-		geometry.x = screen_area.x;
-		geometry.width = screen_area.width / 2 - 2 * client->border_width;
+		client->geometry.x = screen_area.x;
+		client->geometry.width = screen_area.width / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_LEFT_THIRD) {
-		geometry.x = screen_area.x;
-		geometry.width = screen_area.width / 3 - 2 * client->border_width;
+		client->geometry.x = screen_area.x;
+		client->geometry.width = screen_area.width / 3 - 2 * client->border_width;
 	} else if (flag & DIRECTION_RIGHT) {
-		geometry.x = screen_area.x + screen_area.width / 2;
-		geometry.width = screen_area.width / 2 - 2 * client->border_width;
+		client->geometry.x = screen_area.x + screen_area.width / 2;
+		client->geometry.width = screen_area.width / 2 - 2 * client->border_width;
 	} else if (flag & DIRECTION_RIGHT_THIRD) {
-		geometry.x = screen_area.x + screen_area.width - screen_area.width / 3;
-		geometry.width = screen_area.width / 3 - 2 * client->border_width;
+		client->geometry.x = screen_area.x + screen_area.width - screen_area.width / 3;
+		client->geometry.width = screen_area.width / 3 - 2 * client->border_width;
 	} else {
-		geometry.x = screen_area.x;
-		geometry.width = screen_area.width - 2 * client->border_width;
+		client->geometry.x = screen_area.x;
+		client->geometry.width = screen_area.width - 2 * client->border_width;
 	}
 
-	client_move_resize(state, client, geometry, True, True);
+	client_apply_size_hints(state, client);
+	client_move_resize(state, client, True);
 }
 
 void

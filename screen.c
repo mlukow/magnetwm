@@ -29,7 +29,7 @@ void
 screen_adopt(state_t *state, screen_t *screen, client_t *client)
 {
 	Bool dirty = False;
-	geometry_t geometry, screen_area;
+	geometry_t screen_area;
 	group_t *group;
 
 	group_unassign(client);
@@ -37,31 +37,30 @@ screen_adopt(state_t *state, screen_t *screen, client_t *client)
 	group = group_assign(screen->desktops[screen->desktop_index], client);
 	group->desktop = screen->desktops[screen->desktop_index];
 
-	geometry = client->geometry;
 	screen_area = screen_available_area(screen);
 
-	if (geometry.x + geometry.width < screen_area.x) {
-		geometry.x = screen_area.x;
+	if (client->geometry.x + client->geometry.width < screen_area.x) {
+		client->geometry.x = screen_area.x;
 		dirty = True;
 	}
 
-	if (geometry.x > screen_area.x + screen_area.width) {
-		geometry.x = screen_area.x + screen_area.width - geometry.width;
+	if (client->geometry.x > screen_area.x + screen_area.width) {
+		client->geometry.x = screen_area.x + screen_area.width - client->geometry.width;
 		dirty = True;
 	}
 
-	if (geometry.y + geometry.height < screen_area.y) {
-		geometry.y = screen_area.y;
+	if (client->geometry.y + client->geometry.height < screen_area.y) {
+		client->geometry.y = screen_area.y;
 		dirty = True;
 	}
 
-	if (geometry.y > screen_area.y + screen_area.height) {
-		geometry.y = screen_area.y + screen_area.height - geometry.height;
+	if (client->geometry.y > screen_area.y + screen_area.height) {
+		client->geometry.y = screen_area.y + screen_area.height - client->geometry.height;
 		dirty = True;
 	}
 
 	if (dirty) {
-		client_move_resize(state, client, geometry, False, False);
+		client_move_resize(state, client, False);
 	}
 }
 

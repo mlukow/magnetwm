@@ -20,6 +20,7 @@ void event_handle_key_press(state_t *, XKeyEvent *);
 void event_handle_leave_notify(state_t *, XCrossingEvent *);
 void event_handle_map_request(state_t *, XMapRequestEvent *);
 void event_handle_property_notify(state_t *, XPropertyEvent *);
+void event_handle_reparent_notify(state_t *, XReparentEvent *);
 
 void
 event_handle_button_press(state_t *state, XButtonPressedEvent *event)

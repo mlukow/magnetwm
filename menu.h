@@ -28,6 +28,8 @@ typedef struct menu_t {
 	struct screen_t *screen;
 	struct state_t *state;
 
+	void (*callback)(struct state_t *, void *);
+
 	Window window;
 	XftDraw *draw;
 
@@ -55,6 +57,6 @@ typedef struct menu_t {
 void menu_add(menu_t *, void *, Bool, char *, char *);
 void *menu_filter(menu_t *);
 void menu_free(menu_t *);
-menu_t *menu_init(struct state_t *, struct screen_t *, char *, Bool);
+menu_t *menu_init(struct state_t *, struct screen_t *, char *, Bool, void (*)(struct state_t *, void *));
 
 #endif /* __MENU_H__ */

@@ -10,7 +10,6 @@
 #include <unistd.h>
 
 #include "event.h"
-#include "server.h"
 #include "state.h"
 #include "utils.h"
 
@@ -75,14 +74,9 @@ main(int argc, char **argv)
 
 		FD_ZERO(&descriptors);
 		FD_SET(state->fd, &descriptors);
-		FD_SET(state->server->fd, &descriptors);
 
-		if (select(MAX(state->fd, state->server->fd) + 1, &descriptors, NULL, NULL, NULL) <= 0) {
+		if (select(state->fd + 1, &descriptors, NULL, NULL, NULL) <= 0) {
 			continue;
-		}
-
-		if (FD_ISSET(state->server->fd, &descriptors)) {
-			server_process(state, state->server);
 		}
 
 		if (FD_ISSET(state->fd, &descriptors)) {

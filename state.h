@@ -11,7 +11,6 @@ struct config_t;
 struct ewmh_t;
 struct icccm_t;
 struct screen_t;
-struct server_t;
 
 TAILQ_HEAD(screen_q, screen_t);
 
@@ -42,7 +41,6 @@ typedef struct state_t {
 	struct ewmh_t *ewmh;
 	struct icccm_t *icccm;
 	struct screen_q screens;
-	struct server_t *server;
 } state_t;
 
 void state_flush(state_t *);

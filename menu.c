@@ -243,6 +243,10 @@ menu_draw_selection(menu_t *menu, int entry)
 				(const FcChar8 *)item->detail,
 				strlen(item->detail));
 	}
+
+	if (menu->callback) {
+		menu->callback(menu->state, item->context);
+	}
 }
 
 void *
@@ -330,6 +334,8 @@ menu_filter(menu_t *menu)
 
 	XGrabKeyboard(menu->state->display, menu->window, True, GrabModeAsync, GrabModeAsync, CurrentTime);
 
+	menu_draw(menu);
+
 	while (processing) {
 		XWindowEvent(menu->state->display, menu->window, MENUMASK, &event);
 		switch (event.type) {
@@ -349,9 +355,6 @@ menu_filter(menu_t *menu)
 					}
 				}
 
-				break;
-			case Expose:
-				menu_draw(menu);
 				break;
 			case MotionNotify:
 				if (menu_handle_move(menu, event.xbutton.x_root, event.xbutton.y_root)) {
@@ -660,7 +663,7 @@ menu_handle_release(menu_t *menu, int x, int y)
 }
 
 menu_t *
-menu_init(state_t *state, screen_t *screen, char *prompt, Bool cycle)
+menu_init(state_t *state, screen_t *screen, char *prompt, Bool cycle, void (*callback)(state_t *, void *))
 {
 	menu_t *menu;
 	XGCValues values;
@@ -673,6 +676,7 @@ menu_init(state_t *state, screen_t *screen, char *prompt, Bool cycle)
 
 	menu->screen = screen;
 	menu->state = state;
+	menu->callback = callback;
 	menu->window = XCreateSimpleWindow(
 			state->display,
 			state->root,

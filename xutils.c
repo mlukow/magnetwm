@@ -7,37 +7,6 @@
 #include "state.h"
 #include "xutils.h"
 
-void
-x_animate(Display *display, Window window, geometry_t from, geometry_t to, double duration)
-{
-	double time;
-	double dheight, dwidth, dx, dy, height, i, steps, width, x, y;
-
-	steps = 60.0 * duration;
-	time = 1000000.0 * duration / steps;
-
-	x = from.x;
-	y = from.y;
-	width = from.width;
-	height = from.height;
-	dx = ((double)to.x - (double)from.x) / steps;
-	dy = ((double)to.y - (double)from.y) / steps;
-	dwidth = ((double)to.width - (double)from.width) / steps;
-	dheight = ((double)to.height - (double)from.height) / steps;
-
-	for (i = 0; i < steps; i++) {
-		x += dx;
-		y += dy;
-		width += dwidth;
-		height += dheight;
-		XMoveResizeWindow(display, window, x, y, width, height);
-		XFlush(display);
-		usleep(time);
-	}
-
-	XMoveResizeWindow(display, window, to.x, to.y, to.width, to.height);
-}
-
 Bool
 x_contains_point(geometry_t geometry, int x, int y)
 {

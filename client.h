@@ -11,22 +11,23 @@ struct group_t;
 struct state_t;
 
 typedef enum client_flags_t {
-	CLIENT_HIDDEN = 0x0001,
-	CLIENT_IGNORE = 0x0002,
-	CLIENT_VMAXIMIZED = 0x0004,
-	CLIENT_HMAXIMIZED = 0x0008,
-	CLIENT_FREEZE = 0x0010,
-	CLIENT_GROUP = 0x0020,
-	CLIENT_UNGROUP = 0x0040,
-	CLIENT_INPUT = 0x0080,
-	CLIENT_WM_DELETE_WINDOW = 0x0100,
-	CLIENT_WM_TAKE_FOCUS = 0x0200,
-	CLIENT_URGENCY = 0x0400,
-	CLIENT_FULLSCREEN = 0x0800,
-	CLIENT_STICKY = 0x1000,
-	CLIENT_ACTIVE = 0x2000,
-	CLIENT_SKIP_PAGER = 0x4000,
-	CLIENT_SKIP_TASKBAR = 0x8000,
+	CLIENT_HIDDEN = 0x00001,
+	CLIENT_IGNORE = 0x00002,
+	CLIENT_VMAXIMIZED = 0x00004,
+	CLIENT_HMAXIMIZED = 0x00008,
+	CLIENT_FREEZE = 0x00010,
+	CLIENT_GROUP = 0x00020,
+	CLIENT_UNGROUP = 0x00040,
+	CLIENT_INPUT = 0x00080,
+	CLIENT_WM_DELETE_WINDOW = 0x00100,
+	CLIENT_WM_TAKE_FOCUS = 0x00200,
+	CLIENT_URGENCY = 0x00400,
+	CLIENT_FULLSCREEN = 0x00800,
+	CLIENT_STICKY = 0x01000,
+	CLIENT_ACTIVE = 0x02000,
+	CLIENT_SKIP_PAGER = 0x04000,
+	CLIENT_SKIP_TASKBAR = 0x08000,
+	CLIENT_MARK = 0x10000,
 	CLIENT_SKIP_CYCLE = (CLIENT_HIDDEN | CLIENT_IGNORE | CLIENT_SKIP_TASKBAR | CLIENT_SKIP_PAGER),
 	CLIENT_HIGHLIGHT = (CLIENT_GROUP | CLIENT_UNGROUP),
 	CLIENT_MAXFLAGS = (CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED),
@@ -87,6 +88,7 @@ typedef struct client_t {
 } client_t;
 
 void client_activate(struct state_t *, client_t *, Bool);
+void client_apply_size_hints(struct state_t *, client_t *);
 void client_close(struct state_t *, client_t *);
 void client_configure(struct state_t *, client_t *);
 void client_deactivate(struct state_t *, client_t *);
@@ -98,7 +100,7 @@ void client_hide(struct state_t *, client_t *);
 client_t *client_init(struct state_t *, Window, Bool);
 void client_lower(struct state_t *, client_t *);
 void client_map(struct state_t *, client_t *);
-void client_move_resize(struct state_t *, client_t *, geometry_t, Bool, Bool);
+void client_move_resize(struct state_t *, client_t *, Bool);
 client_t *client_next(client_t *);
 client_t *client_previous(client_t *);
 void client_raise(struct state_t *, client_t *);

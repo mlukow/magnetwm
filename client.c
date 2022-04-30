@@ -16,9 +16,9 @@
 #include "utils.h"
 #include "xutils.h"
 
-void client_placement(state_t *, client_t *client);
-geometry_t client_placement_cascade(state_t *, client_t *, geometry_t);
-geometry_t client_placement_pointer(state_t *, client_t *, geometry_t);
+void client_placement(state_t *, client_t *);
+void client_placement_cascade(state_t *, client_t *, geometry_t);
+void client_placement_pointer(state_t *, client_t *, geometry_t);
 void client_update_class(state_t *, client_t *);
 
 void
@@ -55,6 +55,48 @@ client_activate(state_t *state, client_t *client, Bool requeue)
 
 	client_draw_border(state, client);
 	ewmh_set_net_active_window(state, client);
+}
+
+void
+client_apply_size_hints(state_t *state, client_t *client)
+{
+	Bool baseismin;
+
+	baseismin = (client->hints.desired_width == client->hints.min_width) && (client->hints.desired_height == client->hints.min_height);
+	if (!baseismin) {
+		client->geometry.width -= client->hints.desired_width;
+		client->geometry.height -= client->hints.desired_height;
+	}
+
+	if (client->hints.min_aspect_ratio && client->hints.max_aspect_ratio) {
+		if (client->hints.max_aspect_ratio < (float)client->geometry.width / client->geometry.height) {
+			client->geometry.width = client->geometry.height * client->hints.max_aspect_ratio;
+		} else if (client->hints.min_aspect_ratio < (float)client->geometry.height / client->geometry.width) {
+			client->geometry.height = client->geometry.width * client->hints.min_aspect_ratio;
+		}
+	}
+
+	if (baseismin) {
+		client->geometry.width -= client->hints.desired_width;
+		client->geometry.height -= client->hints.desired_height;
+	}
+
+	client->geometry.width -= client->geometry.width % client->hints.width_increment;
+	client->geometry.height -= client->geometry.height % client->hints.height_increment;
+
+	client->geometry.width += client->hints.desired_width;
+	client->geometry.height += client->hints.desired_height;
+
+	client->geometry.width = MAX(client->geometry.width, client->hints.min_width);
+	client->geometry.height = MAX(client->geometry.height, client->hints.min_height);
+
+	if (client->hints.max_width) {
+		client->geometry.width = MIN(client->geometry.width, client->hints.max_width);
+	}
+
+	if (client->hints.max_height) {
+		client->geometry.height = MIN(client->geometry.height, client->hints.max_height);
+	}
 }
 
 void
@@ -111,7 +153,9 @@ client_draw_border(state_t *state, client_t *client)
 	}
 	*/
 
-	if (client->flags & CLIENT_ACTIVE) {
+	if (client->flags & CLIENT_MARK) {
+		pixel = state->colors[COLOR_BORDER_MARK].pixel;
+	} else if (client->flags & CLIENT_ACTIVE) {
 		pixel = state->colors[COLOR_BORDER_ACTIVE].pixel;
 	} else if (client->flags & CLIENT_URGENCY) {
 		pixel = state->colors[COLOR_BORDER_URGENT].pixel;
@@ -201,6 +245,26 @@ client_hide(state_t *state, client_t *client)
 	client->flags |= CLIENT_HIDDEN;
 	icccm_set_wm_state(state, client, IconicState);
 	ewmh_set_net_wm_state(state, client);
+}
+
+char *nft(client_t *client)
+{
+	switch (client->type) {
+	case CLIENT_TYPE_DESKTOP: return "desktop";
+	case CLIENT_TYPE_DOCK: return "dock";
+	case CLIENT_TYPE_TOOLBAR: return "toolbar";
+	case CLIENT_TYPE_MENU: return "menu";
+	case CLIENT_TYPE_UTILITY: return "utility";
+	case CLIENT_TYPE_SPLASH: return "splash";
+	case CLIENT_TYPE_DIALOG: return "dialog";
+	case CLIENT_TYPE_DROPDOWN_MENU: return "dropdown menu";
+	case CLIENT_TYPE_POPUP_MENU: return "popup menu";
+	case CLIENT_TYPE_TOOLTIP: return "tooltip";
+	case CLIENT_TYPE_NOTIFICATION: return "notification";
+	case CLIENT_TYPE_COMBO: return "combo";
+	case CLIENT_TYPE_DND: return "dnd";
+	case CLIENT_TYPE_NORMAL: return "normal";
+	}
 }
 
 client_t *
@@ -309,26 +373,20 @@ client_map(state_t *state, client_t *client)
 }
 
 void
-client_move_resize(state_t *state, client_t *client, geometry_t geometry, Bool animate, Bool reset)
+client_move_resize(state_t *state, client_t *client, Bool reset)
 {
 	if (reset) {
 		client->flags &= ~CLIENT_MAXIMIZED;
 		ewmh_set_net_wm_state(state, client);
 	}
 
-	if (animate && state->config->transition_duration > 0) {
-		x_animate(state->display, client->window, client->geometry, geometry, state->config->transition_duration);
-	} else {
-		XMoveResizeWindow(
-				state->display,
-				client->window,
-				geometry.x,
-				geometry.y,
-				geometry.width,
-				geometry.height);
-	}
-
-	client->geometry = geometry;
+	XMoveResizeWindow(
+			state->display,
+			client->window,
+			client->geometry.x,
+			client->geometry.y,
+			client->geometry.width,
+			client->geometry.height);
 
 	client_configure(state, client);
 }
@@ -352,12 +410,10 @@ client_next(client_t *client)
 void
 client_placement(state_t *state, client_t *client)
 {
-	geometry_t geometry, screen_area;
+	geometry_t screen_area;
 	screen_t *screen;
 
 	srand(time(0));
-
-	geometry = client->geometry;
 
 	screen = client->group->desktop->screen;
 	screen_area = screen_available_area(screen);
@@ -366,36 +422,35 @@ client_placement(state_t *state, client_t *client)
 		// TODO: support hints
 	} else {
 		if (state->config->window_placement == WINDOW_PLACEMENT_CASCADE) {
-			geometry = client_placement_cascade(state, client, screen_area);
+			client_placement_cascade(state, client, screen_area);
 		} else if (state->config->window_placement == WINDOW_PLACEMENT_POINTER) {
-			geometry = client_placement_pointer(state, client, screen_area);
+			client_placement_pointer(state, client, screen_area);
 		}
 
-		if (geometry.x < screen_area.x) {
-			geometry.x = screen_area.x;
+		if (client->geometry.x < screen_area.x) {
+			client->geometry.x = screen_area.x;
 		}
 
-		if (geometry.x + geometry.width > screen_area.x + screen_area.width) {
-			geometry.x = screen_area.x + screen_area.width - geometry.width;
+		if (client->geometry.x + client->geometry.width > screen_area.x + screen_area.width) {
+			client->geometry.x = screen_area.x + screen_area.width - client->geometry.width;
 		}
 
-		if (geometry.y < screen_area.y) {
-			geometry.y = screen_area.y;
+		if (client->geometry.y < screen_area.y) {
+			client->geometry.y = screen_area.y;
 		}
 
-		if (geometry.y + geometry.height > screen_area.y + screen_area.height) {
-			geometry.y = screen_area.y + screen_area.height - geometry.height;
+		if (client->geometry.y + client->geometry.height > screen_area.y + screen_area.height) {
+			client->geometry.y = screen_area.y + screen_area.height - client->geometry.height;
 		}
 	}
 
-	client_move_resize(state, client, geometry, False, False);
+	client_move_resize(state, client, False);
 }
 
-geometry_t
+void
 client_placement_cascade(state_t *state, client_t *client, geometry_t screen_area)
 {
 	client_t *existing;
-	geometry_t geometry;
 	int rand_x_from, rand_x_to, rand_y_from, rand_y_to;
 
 	existing = TAILQ_LAST(&client->group->clients, client_q);
@@ -404,12 +459,12 @@ client_placement_cascade(state_t *state, client_t *client, geometry_t screen_are
 	}
 
 	if (existing) {
-		geometry.x = existing->geometry.x + FUZZY_DISTANCE;
-		geometry.y = existing->geometry.y + FUZZY_DISTANCE;
-		geometry.width = existing->geometry.width;
-		geometry.height = existing->geometry.height;
-		if ((geometry.x + geometry.width > screen_area.x + screen_area.width) ||
-				(geometry.y + geometry.height > screen_area.y + screen_area.height)) {
+		client->geometry.x = existing->geometry.x + FUZZY_DISTANCE;
+		client->geometry.y = existing->geometry.y + FUZZY_DISTANCE;
+		client->geometry.width = existing->geometry.width;
+		client->geometry.height = existing->geometry.height;
+		if ((client->geometry.x + client->geometry.width > screen_area.x + screen_area.width) ||
+				(client->geometry.y + client->geometry.height > screen_area.y + screen_area.height)) {
 
 			if (existing->geometry.x + existing->geometry.width / 2 > (screen_area.x + screen_area.width) / 2) {
 				rand_x_from = screen_area.x;
@@ -427,34 +482,25 @@ client_placement_cascade(state_t *state, client_t *client, geometry_t screen_are
 				rand_y_to = screen_area.y + screen_area.height;
 			}
 
-			geometry.x = (rand() % (rand_x_to - rand_x_from)) + rand_x_from;
-			geometry.y = (rand() % (rand_y_to - rand_y_from)) + rand_y_from;
+			client->geometry.x = (rand() % (rand_x_to - rand_x_from)) + rand_x_from;
+			client->geometry.y = (rand() % (rand_y_to - rand_y_from)) + rand_y_from;
 
 		}
 	} else {
-		geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
-		geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
-		geometry.width = client->geometry.width;
-		geometry.height = client->geometry.height;
+		client->geometry.x = screen_area.x + (screen_area.width - client->geometry.width) / 2 - client->border_width;
+		client->geometry.y = screen_area.y + (screen_area.height - client->geometry.height) / 2 - client->border_width;
 	}
-
-	return geometry;
 }
 
-geometry_t
+void
 client_placement_pointer(state_t *state, client_t *client, geometry_t screen_area)
 {
-	geometry_t geometry;
 	int x, y;
 
 	(void)x_get_pointer(state->display, state->root, &x, &y);
 
-	geometry.x = x - client->geometry.width / 2 - client->border_width;
-	geometry.y = y - client->geometry.height / 2 - client->border_width;
-	geometry.width = client->geometry.width;
-	geometry.height = client->geometry.height;
-
-	return geometry;
+	client->geometry.x = x - client->geometry.width / 2 - client->border_width;
+	client->geometry.y = y - client->geometry.height / 2 - client->border_width;
 }
 
 client_t *
@@ -534,7 +580,7 @@ client_restore(state_t *state, client_t *client)
 
 		client->geometry = client->geometry_saved;
 
-		client_move_resize(state, client, client->geometry_saved, True, False);
+		client_move_resize(state, client, False);
 		ewmh_set_net_wm_state(state, client);
 	}
 }
@@ -564,30 +610,26 @@ client_toggle_freeze(state_t *state, client_t *client)
 void
 client_toggle_fullscreen(state_t *state, client_t *client)
 {
-	geometry_t geometry;
-
 	if ((client->flags & CLIENT_FREEZE) && !(client->flags & CLIENT_FULLSCREEN)) {
 		return;
 	}
-
-	geometry = client->geometry;
 
 	if (client->flags & CLIENT_FULLSCREEN) {
 		if (!(client->flags & CLIENT_IGNORE)) {
 			client->border_width = state->config->border_width;
 		}
 
-		geometry = client->geometry_saved;
+		client->geometry = client->geometry_saved;
 		client->flags &= ~(CLIENT_FULLSCREEN | CLIENT_FREEZE);
 	} else {
 		client->geometry_saved = client->geometry;
+		client->geometry = client->group->desktop->screen->geometry;
 		client->border_width = 0;
-		geometry = client->group->desktop->screen->geometry;
 		client->flags |= (CLIENT_FULLSCREEN | CLIENT_FREEZE);
 	}
 
 	client_draw_border(state, client);
-	client_move_resize(state, client, geometry, True, False);
+	client_move_resize(state, client, False);
 	ewmh_set_net_wm_state(state, client);
 }
 
@@ -601,29 +643,27 @@ client_toggle_hidden(state_t *state, client_t *client)
 void
 client_toggle_hmaximize(state_t *state, client_t *client)
 {
-	geometry_t geometry, screen_area;
+	geometry_t screen_area;
 	screen_t *screen;
 
 	if (client->flags & CLIENT_FREEZE) {
 		return;
 	}
 
-	geometry = client->geometry;
-
 	screen = client->group->desktop->screen;
 	screen_area = screen_available_area(screen);
 
-	geometry.x = screen_area.x;
-	geometry.width = screen_area.width - 2 * client->border_width;
+	client->geometry.x = screen_area.x;
+	client->geometry.width = screen_area.width - 2 * client->border_width;
 
-	client_move_resize(state, client, geometry, True, False);
+	client_move_resize(state, client, False);
 	ewmh_set_net_wm_state(state, client);
 }
 
 void
 client_toggle_maximize(state_t *state, client_t *client)
 {
-	geometry_t geometry, screen_area;
+	geometry_t screen_area;
 	screen_t *screen;
 
 	if (client->flags & CLIENT_FREEZE) {
@@ -635,24 +675,22 @@ client_toggle_maximize(state_t *state, client_t *client)
 
 	if ((client->flags & CLIENT_MAXFLAGS) == CLIENT_MAXIMIZED) {
 		if ((client->geometry_saved.width > 0) && (client->geometry_saved.height > 0)) {
-			geometry = client->geometry_saved;
-		} else {
-			geometry = client->geometry;
+			client->geometry = client->geometry_saved;
 		}
 
 		client->flags &= ~CLIENT_MAXIMIZED;
 	} else {
 		client->geometry_saved = client->geometry;
 
-		geometry.x = screen_area.x;
-		geometry.y = screen_area.y;
-		geometry.width = screen_area.width - 2 * client->border_width;
-		geometry.height = screen_area.height - 2 * client->border_width;
+		client->geometry.x = screen_area.x;
+		client->geometry.y = screen_area.y;
+		client->geometry.width = screen_area.width - 2 * client->border_width;
+		client->geometry.height = screen_area.height - 2 * client->border_width;
 
 		client->flags |= CLIENT_MAXIMIZED;
 	}
 
-	client_move_resize(state, client, geometry, True, False);
+	client_move_resize(state, client, False);
 	ewmh_set_net_wm_state(state, client);
 }
 
@@ -688,22 +726,20 @@ client_toggle_urgent(state_t *state, client_t *client)
 void
 client_toggle_vmaximize(state_t *state, client_t *client)
 {
-	geometry_t geometry, screen_area;
+	geometry_t screen_area;
 	screen_t *screen;
 
 	if (client->flags & CLIENT_FREEZE) {
 		return;
 	}
 
-	geometry = client->geometry;
-
 	screen = client->group->desktop->screen;
 	screen_area = screen_available_area(screen);
 
-	geometry.y = screen_area.y;
-	geometry.width = screen_area.height - 2 * client->border_width;
+	client->geometry.y = screen_area.y;
+	client->geometry.width = screen_area.height - 2 * client->border_width;
 
-	client_move_resize(state, client, geometry, True, False);
+	client_move_resize(state, client, False);
 	ewmh_set_net_wm_state(state, client);
 }
 
@@ -786,6 +822,9 @@ client_update_size_hints(state_t *state, client_t *client)
 			client->hints.max_aspect_ratio = (float)hints.max_aspect.x / hints.max_aspect.y;
 		}
 	}
+
+	client_apply_size_hints(state, client);
+	client_move_resize(state, client, False);
 }
 
 void
